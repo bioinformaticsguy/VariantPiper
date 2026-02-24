@@ -1,0 +1,33 @@
+# =============================================================================
+# VariantPiper — main Snakefile
+# =============================================================================
+# Run from the project root:
+#   snakemake --snakefile workflow/Snakefile \
+#             --configfile config/config.yaml \
+#             --use-conda \
+#             --cores <N>
+# =============================================================================
+
+configfile: "config/config.yaml"
+
+SAMPLES = list(config["samples"].keys())
+OUTDIR  = config["outdir"]
+
+# -----------------------------------------------------------------------------
+# Rule modules (one per pipeline step)
+# -----------------------------------------------------------------------------
+include: "rules/qc.smk"
+
+
+# -----------------------------------------------------------------------------
+# Target rule — defines the final outputs for the current step
+# (updated as new steps are added)
+# -----------------------------------------------------------------------------
+rule all:
+    input:
+        # Step 1: QC reports + trimmed reads
+        expand(
+            "{outdir}/{sample}/qc/{sample}_fastp.html",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),

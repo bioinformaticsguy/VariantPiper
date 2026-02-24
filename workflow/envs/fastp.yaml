@@ -1,9 +1,5 @@
-name: fastp-env
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
 dependencies:
-  - fastp=0.20.0
-  - python=3.8
-  - numpy
-  - pandas
+  - fastp>=0.23

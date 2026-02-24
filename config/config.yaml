@@ -1,0 +1,32 @@
+# =============================================================================
+# VariantPiper — pipeline configuration
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Samples
+# Each entry: sample_id -> {R1: path, R2: path}
+# Paths are relative to the working directory (project root).
+# ---------------------------------------------------------------------------
+samples:
+  test:
+    R1: "test_data/test_R1.fastq.gz"
+    R2: "test_data/test_R2.fastq.gz"
+
+# ---------------------------------------------------------------------------
+# Output directory
+# ---------------------------------------------------------------------------
+outdir: "output"
+
+# ---------------------------------------------------------------------------
+# Reference genome (needed from Step 2 onward)
+# Point this to your indexed hg38/GRCh38 FASTA.
+# ---------------------------------------------------------------------------
+reference: "resources/reference/hg38.fa"
+
+# ---------------------------------------------------------------------------
+# Step 1 — QC (fastp)
+# ---------------------------------------------------------------------------
+fastp:
+  min_read_length: 50         # discard reads shorter than this after trimming
+  qualified_quality_phred: 20 # minimum base quality
+  extra: ""                   # any additional fastp flags

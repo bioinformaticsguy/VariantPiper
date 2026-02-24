@@ -1,2 +1,13 @@
-/input
-/output
+# pipeline inputs/outputs (too large for git)
+/input/
+/output/
+
+# snakemake internals
+.snakemake/
+
+# python
+__pycache__/
+*.pyc
+
+# ignore Claude
+CLAUDE.md
