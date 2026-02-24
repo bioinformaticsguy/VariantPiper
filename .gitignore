@@ -2,6 +2,12 @@
 /input/
 /output/
 
+# downloaded resources (reference genome, indexes, singularity images)
+/resources/reference/
+/resources/singularity/
+# keep the README
+!/resources/README.md
+
 # snakemake internals
 .snakemake/
 

@@ -18,6 +18,7 @@ OUTDIR  = config["outdir"]
 # -----------------------------------------------------------------------------
 include: "rules/reference.smk"
 include: "rules/qc.smk"
+include: "rules/alignment.smk"
 
 
 # -----------------------------------------------------------------------------
@@ -26,9 +27,20 @@ include: "rules/qc.smk"
 # -----------------------------------------------------------------------------
 rule all:
     input:
-        # Step 1: QC reports + trimmed reads
+        # Step 1: QC reports
         expand(
             "{outdir}/{sample}/qc/{sample}_fastp.html",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        # Step 2: duplicate-marked BAM + index
+        expand(
+            "{outdir}/{sample}/alignment/{sample}.markdup.bam",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/alignment/{sample}.markdup.bam.bai",
             outdir=OUTDIR,
             sample=SAMPLES,
         ),

@@ -129,13 +129,23 @@ snakemake --snakefile workflow/Snakefile \
 output/
 └── {sample}/
     ├── logs/
-    │   └── fastp.log
-    └── qc/
-        ├── {sample}_R1.trimmed.fastq.gz
-        ├── {sample}_R2.trimmed.fastq.gz
-        ├── {sample}_fastp.html
-        └── {sample}_fastp.json
+    │   ├── fastp.log
+    │   ├── bwa_mem2_align.log
+    │   ├── samtools_markdup.log
+    │   └── samtools_index.log
+    ├── qc/
+    │   ├── {sample}_R1.trimmed.fastq.gz
+    │   ├── {sample}_R2.trimmed.fastq.gz
+    │   ├── {sample}_fastp.html
+    │   └── {sample}_fastp.json
+    └── alignment/
+        ├── {sample}.markdup.bam        ← duplicate-marked, sorted BAM
+        ├── {sample}.markdup.bam.bai    ← BAM index
+        └── {sample}.markdup_metrics.txt
 ```
+
+> The intermediate sorted BAM (`{sample}.sorted.bam`) is automatically deleted
+> by Snakemake once duplicate marking completes.
 
 ---
 
