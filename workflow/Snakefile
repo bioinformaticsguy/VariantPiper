@@ -16,6 +16,7 @@ OUTDIR  = config["outdir"]
 # -----------------------------------------------------------------------------
 # Rule modules (one per pipeline step)
 # -----------------------------------------------------------------------------
+include: "rules/reference.smk"
 include: "rules/qc.smk"
 
 

@@ -43,18 +43,19 @@ cd VariantPiper
 bash install.sh
 ```
 
-This downloads the hg38 reference genome, creates samtools and BWA-MEM2 indexes,
-and pulls the DeepVariant Singularity image. Run on a **compute node** (not the
-login node) — BWA-MEM2 indexing needs ~60 GB RAM.
+This downloads the hg38 reference FASTA and pulls the DeepVariant Singularity
+image. Singularity is loaded automatically from the cluster module system.
 
-Individual steps can be skipped if already done:
+Reference indexes (samtools faidx, BWA-MEM2) are **not** created here — they are
+generated automatically by Snakemake on the first pipeline run using dedicated rules
+with their own conda environments.
 
 ```bash
-# Skip BWA-MEM2 indexing (e.g. if index already exists)
-bash install.sh --skip-bwa-index
-
-# Skip DeepVariant image pull (e.g. if singularity is not yet loaded)
+# Skip DeepVariant image pull
 bash install.sh --skip-deepvariant
+
+# If singularity is loaded under a different module name (e.g. apptainer)
+bash install.sh --singularity-module apptainer
 
 # Custom output directories
 bash install.sh --ref-dir /path/to/ref --singularity-dir /path/to/sif
