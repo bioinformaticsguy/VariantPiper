@@ -3,8 +3,8 @@
 #SBATCH --partition=shortterm
 #SBATCH --time=1-00:00:00
 #SBATCH --nodes=1
-#SBATCH -c 2
-#SBATCH --mem=4GB
+#SBATCH -c 16
+#SBATCH --mem=200GB
 #SBATCH --job-name=variantpiper
 #SBATCH --output=logs/slurm_%j_%u_%N.out
 #SBATCH --error=logs/slurm_%j_%u_%N.err
@@ -14,9 +14,13 @@
 # ============================================================
 # VariantPiper — SLURM Submission Script
 # ============================================================
-# This script is a lightweight Snakemake orchestrator.
-# Snakemake submits each pipeline rule as its own SLURM job
-# with the resources defined in the rule files.
+# Runs the full pipeline inside a single SLURM job.
+# All steps (including BWA-MEM2 indexing) execute on the
+# allocated node — no nested SLURM job submission.
+#
+# Resources:
+#   16 CPUs  — used by bwa-mem2 mem (--threads 16)
+#   200 GB   — required by bwa-mem2 index (~143 GB peak on hg38, still growing)
 #
 # Submit with: sbatch submit_job.sh
 # ============================================================
@@ -42,6 +46,8 @@ echo "Node:              $(hostname)"
 echo "Working directory: $(pwd)"
 echo "Snakemake version: $(snakemake --version)"
 echo "Date:              $(date)"
+echo "CPUs:              ${SLURM_CPUS_PER_TASK}"
+echo "Memory:            128 GB"
 echo "Run log:           $RUN_LOG"
 echo "=============================================="
 
@@ -49,7 +55,9 @@ echo "=============================================="
 snakemake \
     --snakefile workflow/Snakefile \
     --configfile config/config.yaml \
-    --profile profiles/slurm
+    --use-conda \
+    --cores "${SLURM_CPUS_PER_TASK}" \
+    --rerun-incomplete
 
 EXIT_CODE=$?
 
