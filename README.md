@@ -111,15 +111,28 @@ snakemake --snakefile workflow/Snakefile \
           --cores 4
 ```
 
-**On an HPC cluster** (SLURM example):
+**On an HPC cluster** (SLURM via the bundled profile):
+
+First, install the SLURM executor plugin once into your snakemake environment:
+
+```bash
+conda activate snakemake
+conda install -c conda-forge -c bioconda snakemake-executor-plugin-slurm
+```
+
+Edit `profiles/slurm/config.yaml` and set `slurm_partition` to match your cluster.
+Then run:
 
 ```bash
 snakemake --snakefile workflow/Snakefile \
           --configfile config/config.yaml \
-          --use-conda \
-          --executor slurm \
-          --jobs 50
+          --profile profiles/slurm
 ```
+
+Snakemake will submit each rule as a separate SLURM job, using the `mem_mb`,
+`runtime`, and `threads` values defined in each rule. Never run the full
+pipeline (especially BWA-MEM2 indexing) inside an interactive `srun` session —
+it will be OOM-killed.
 
 ---
 

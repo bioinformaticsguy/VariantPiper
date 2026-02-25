@@ -26,7 +26,8 @@ rule samtools_faidx:
 rule bwa_mem2_index:
     """
     Create BWA-MEM2 index for the reference genome.
-    Requires ~60 GB RAM — ensure sufficient memory is allocated on the cluster.
+    Requires ~70 GB RAM and up to 6 hours — always run via the SLURM profile,
+    never in an interactive session.
     """
     input:
         config["reference"],
@@ -35,7 +36,8 @@ rule bwa_mem2_index:
     log:
         "logs/reference/bwa_mem2_index.log",
     resources:
-        mem_mb=65000,
+        mem_mb=70000,
+        runtime=360,   # minutes
     conda:
         "../envs/bwa-mem2.yaml"
     shell:

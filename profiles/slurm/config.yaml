@@ -1,0 +1,42 @@
+# =============================================================================
+# Snakemake SLURM profile
+# =============================================================================
+# Requires: snakemake-executor-plugin-slurm
+#   conda install -c conda-forge -c bioconda snakemake-executor-plugin-slurm
+#
+# Usage (from project root):
+#   snakemake --snakefile workflow/Snakefile \
+#             --configfile config/config.yaml \
+#             --profile profiles/slurm
+#
+# All options below become Snakemake CLI defaults when this profile is active.
+# Per-rule resources (mem_mb, runtime, threads) defined in the rule files
+# are forwarded automatically to sbatch.
+# =============================================================================
+
+executor: slurm
+
+# Maximum number of jobs submitted to SLURM at once
+jobs: 50
+
+# Conda environments managed by Snakemake
+use-conda: true
+
+# Wait this many seconds for output files to appear after a job finishes
+# (accounts for shared filesystem latency on HPC)
+latency-wait: 60
+
+# Rerun jobs whose output is incomplete (e.g. from a previous failed run)
+rerun-incomplete: true
+
+# Print shell commands in the log for easier debugging
+printshellcmds: true
+
+# ---------------------------------------------------------------------------
+# Default resources — applied to every job unless the rule overrides them
+# ---------------------------------------------------------------------------
+default-resources:
+  mem_mb: 8000          # 8 GB default RAM
+  runtime: 60           # 60 minutes default wall time
+  slurm_partition: "medium"   # ← update to match your cluster's partition name
+  # slurm_account: ""   # ← uncomment and set if your cluster requires an account

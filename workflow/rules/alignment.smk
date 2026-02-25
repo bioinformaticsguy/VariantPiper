@@ -32,6 +32,7 @@ rule bwa_mem2_align:
     threads: 16
     resources:
         mem_mb=32000,
+        runtime=240,   # minutes
     conda:
         "../envs/bwa-mem2.yaml"
     params:
@@ -66,6 +67,9 @@ rule samtools_markdup:
     log:
         "{outdir}/{sample}/logs/samtools_markdup.log",
     threads: 4
+    resources:
+        mem_mb=8000,
+        runtime=60,
     conda:
         "../envs/samtools.yaml"
     shell:
@@ -87,6 +91,9 @@ rule samtools_index:
         bai="{outdir}/{sample}/alignment/{sample}.markdup.bam.bai",
     log:
         "{outdir}/{sample}/logs/samtools_index.log",
+    resources:
+        mem_mb=4000,
+        runtime=30,
     conda:
         "../envs/samtools.yaml"
     shell:
