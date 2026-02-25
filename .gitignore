@@ -17,3 +17,7 @@ __pycache__/
 
 # ignore Claude
 CLAUDE.md
+
+
+# ignore logs
+/logs
