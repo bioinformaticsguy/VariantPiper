@@ -36,8 +36,8 @@ rule bwa_mem2_index:
     log:
         "logs/reference/bwa_mem2_index.log",
     resources:
-        mem_mb=70000,
-        runtime=360,   # minutes
+        mem_mb=110000,  # peaks at ~98 GB on hg38; 110 GB gives a safe margin
+        runtime=360,    # minutes
     conda:
         "../envs/bwa-mem2.yaml"
     shell:
