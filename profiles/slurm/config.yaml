@@ -38,5 +38,5 @@ printshellcmds: true
 default-resources:
   mem_mb: 8000          # 8 GB default RAM
   runtime: 60           # 60 minutes default wall time
-  slurm_partition: "medium"   # ← update to match your cluster's partition name
+  slurm_partition: "shortterm"
   # slurm_account: ""   # ← uncomment and set if your cluster requires an account
