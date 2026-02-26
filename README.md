@@ -144,7 +144,7 @@ output/
     ├── logs/
     │   ├── fastp.log
     │   ├── bwa_mem2_align.log
-    │   ├── samtools_markdup.log
+    │   ├── picard_markduplicates.log
     │   └── samtools_index.log
     ├── qc/
     │   ├── {sample}_R1.trimmed.fastq.gz

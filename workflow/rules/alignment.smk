@@ -2,10 +2,13 @@
 # Step 2 — Alignment with BWA-MEM2
 # =============================================================================
 # Three rules in order:
-#   1. bwa_mem2_align   — align trimmed reads, pipe into samtools sort
-#                         produces a temporary sorted BAM
-#   2. samtools_markdup — mark PCR/optical duplicates
-#   3. samtools_index   — index the final BAM for random access
+#   1. bwa_mem2_align         — align + coordinate sort → temp sorted BAM
+#   2. picard_markduplicates  — mark PCR/optical duplicates
+#   3. samtools_index         — index the final BAM for random access
+#
+# Picard MarkDuplicates is used instead of samtools markdup because it does
+# not require a preceding samtools fixmate step, and is the standard tool
+# used in clinical germline pipelines (GATK best practices, nf-core/raredisease).
 #
 # The sorted BAM from rule 1 is marked temp() and deleted automatically
 # once markdup completes, saving disk space.
@@ -16,7 +19,13 @@
 
 
 rule bwa_mem2_align:
-    """Align trimmed paired-end reads to the reference and produce a sorted BAM."""
+    """
+    Align trimmed paired-end reads to the reference and produce a
+    coordinate-sorted BAM.
+
+    -K 100000000 processes a fixed number of bases per batch, ensuring
+    deterministic output regardless of the number of threads used.
+    """
     input:
         r1="{outdir}/{sample}/qc/{sample}_R1.trimmed.fastq.gz",
         r2="{outdir}/{sample}/qc/{sample}_R2.trimmed.fastq.gz",
@@ -32,7 +41,7 @@ rule bwa_mem2_align:
     threads: 16
     resources:
         mem_mb=32000,
-        runtime=240,   # minutes
+        runtime=240,
     conda:
         "../envs/bwa-mem2.yaml"
     params:
@@ -45,6 +54,7 @@ rule bwa_mem2_align:
         """
         bwa-mem2 mem \
             -t {threads} \
+            -K 100000000 \
             -R '{params.rg}' \
             {params.extra} \
             {input.ref} \
@@ -57,28 +67,31 @@ rule bwa_mem2_align:
         """
 
 
-rule samtools_markdup:
-    """Mark PCR and optical duplicates in the sorted BAM."""
+rule picard_markduplicates:
+    """
+    Mark PCR and optical duplicates with Picard MarkDuplicates.
+    Picard works directly on a coordinate-sorted BAM and does not require
+    a prior samtools fixmate step.
+    """
     input:
         bam="{outdir}/{sample}/alignment/{sample}.sorted.bam",
     output:
         bam="{outdir}/{sample}/alignment/{sample}.markdup.bam",
         metrics="{outdir}/{sample}/alignment/{sample}.markdup_metrics.txt",
     log:
-        "{outdir}/{sample}/logs/samtools_markdup.log",
-    threads: 4
+        "{outdir}/{sample}/logs/picard_markduplicates.log",
     resources:
-        mem_mb=8000,
-        runtime=60,
+        mem_mb=16000,
+        runtime=120,
     conda:
-        "../envs/samtools.yaml"
+        "../envs/picard.yaml"
     shell:
         """
-        samtools markdup \
-            -@ {threads} \
-            -f {output.metrics} \
-            {input.bam} \
-            {output.bam} \
+        picard MarkDuplicates \
+            -I {input.bam} \
+            -O {output.bam} \
+            -M {output.metrics} \
+            --TMP_DIR . \
             2> {log}
         """
 

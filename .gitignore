@@ -21,3 +21,6 @@ CLAUDE.md
 
 # ignore logs
 /logs
+
+# ignore the rare disease pipeline
+/raredisease-2.6.0.zip
