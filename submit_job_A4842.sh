@@ -20,7 +20,7 @@
 # ============================================================
 
 # --- Singularity ---
-module load singularity
+module load singularity/v4.1.3
 
 # --- Conda setup ---
 MINIFORGE_PATH="/work/hassan/hassan/miniforge"
