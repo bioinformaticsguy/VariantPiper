@@ -19,11 +19,11 @@ OUTDIR  = config["outdir"]
 include: "rules/reference.smk"
 include: "rules/qc.smk"
 include: "rules/alignment.smk"
+include: "rules/variant_calling.smk"
 
 
 # -----------------------------------------------------------------------------
-# Target rule — defines the final outputs for the current step
-# (updated as new steps are added)
+# Target rule — final outputs of the complete pipeline
 # -----------------------------------------------------------------------------
 rule all:
     input:
@@ -41,6 +41,27 @@ rule all:
         ),
         expand(
             "{outdir}/{sample}/alignment/{sample}.markdup.bam.bai",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        # Step 3: VCF + gVCF + indexes
+        expand(
+            "{outdir}/{sample}/variants/{sample}.vcf.gz",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/variants/{sample}.vcf.gz.tbi",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/variants/{sample}.g.vcf.gz",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/variants/{sample}.g.vcf.gz.tbi",
             outdir=OUTDIR,
             sample=SAMPLES,
         ),

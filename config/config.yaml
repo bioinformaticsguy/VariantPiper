@@ -24,6 +24,16 @@ outdir: "output"
 reference: "resources/reference/hg38.fa"
 
 # ---------------------------------------------------------------------------
+# Step 3 — Variant calling (DeepVariant)
+# ---------------------------------------------------------------------------
+deepvariant:
+  sif: "resources/singularity/deepvariant_1.6.1.sif"  # path to Singularity image
+  model_type: "WGS"       # WGS for whole genome, WES for exome
+  singularity_bind: "/data"  # bind path(s) for singularity — must cover reference,
+                              # BAM, and output dirs; adjust for your cluster
+  extra: ""               # any additional run_deepvariant flags
+
+# ---------------------------------------------------------------------------
 # Step 2 — Alignment (BWA-MEM2)
 # ---------------------------------------------------------------------------
 bwa_mem2:

@@ -21,6 +21,15 @@ outdir: "output"
 reference: "resources/reference/hg38.fa"
 
 # ---------------------------------------------------------------------------
+# Step 3 — Variant calling (DeepVariant)
+# ---------------------------------------------------------------------------
+deepvariant:
+  sif: "resources/singularity/deepvariant_1.6.1.sif"
+  model_type: "WGS"
+  singularity_bind: "/data"
+  extra: ""
+
+# ---------------------------------------------------------------------------
 # Step 2 — Alignment (BWA-MEM2)
 # ---------------------------------------------------------------------------
 bwa_mem2:

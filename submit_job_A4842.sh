@@ -19,6 +19,9 @@
 # Submit with: sbatch submit_job_A4842.sh
 # ============================================================
 
+# --- Singularity ---
+module load singularity
+
 # --- Conda setup ---
 MINIFORGE_PATH="/work/hassan/hassan/miniforge"
 source "${MINIFORGE_PATH}/etc/profile.d/conda.sh"

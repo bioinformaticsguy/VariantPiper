@@ -145,16 +145,22 @@ output/
     │   ├── fastp.log
     │   ├── bwa_mem2_align.log
     │   ├── picard_markduplicates.log
-    │   └── samtools_index.log
+    │   ├── samtools_index.log
+    │   └── deepvariant.log
     ├── qc/
     │   ├── {sample}_R1.trimmed.fastq.gz
     │   ├── {sample}_R2.trimmed.fastq.gz
     │   ├── {sample}_fastp.html
     │   └── {sample}_fastp.json
-    └── alignment/
-        ├── {sample}.markdup.bam        ← duplicate-marked, sorted BAM
-        ├── {sample}.markdup.bam.bai    ← BAM index
-        └── {sample}.markdup_metrics.txt
+    ├── alignment/
+    │   ├── {sample}.markdup.bam        ← duplicate-marked, sorted BAM
+    │   ├── {sample}.markdup.bam.bai    ← BAM index
+    │   └── {sample}.markdup_metrics.txt
+    └── variants/
+        ├── {sample}.vcf.gz             ← SNV + indel calls
+        ├── {sample}.vcf.gz.tbi         ← tabix index
+        ├── {sample}.g.vcf.gz           ← gVCF (for cohort genotyping)
+        └── {sample}.g.vcf.gz.tbi
 ```
 
 > The intermediate sorted BAM (`{sample}.sorted.bam`) is automatically deleted
