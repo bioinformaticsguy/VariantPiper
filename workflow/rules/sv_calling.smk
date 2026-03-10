@@ -54,7 +54,12 @@ rule delly_call:
 
 rule delly_filter:
     """
-    Apply germline filter to the raw Delly BCF and export as VCF.gz + TBI.
+    Export the raw Delly BCF as VCF.gz + TBI, keeping only PASS variants.
+
+    Note: delly filter -f germline is designed for population cohorts (>=20 samples)
+    and removes essentially all calls in single-sample analysis. For single-sample
+    germline SV discovery, we rely on Delly's built-in per-variant quality filter
+    (PASS vs LowQual) applied during delly call.
     """
     input:
         bcf="{outdir}/{sample}/sv_calls/{sample}.sv.bcf",
@@ -71,20 +76,12 @@ rule delly_filter:
         "../envs/delly.yaml"
     shell:
         """
-        FILTERED=$(mktemp --suffix=.bcf)
-        trap "rm -f '$FILTERED'" EXIT
-
-        delly filter \
-            -f germline \
-            -o "$FILTERED" \
-            {input.bcf} \
-            2> {log}
-
         bcftools view \
+            -f "PASS,." \
             -O z \
             -o {output.vcf} \
-            "$FILTERED" \
-            2>> {log}
+            {input.bcf} \
+            2> {log}
 
         bcftools index -t {output.vcf} 2>> {log}
         """
