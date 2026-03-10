@@ -18,6 +18,9 @@ rule fastp:
     log:
         "{outdir}/{sample}/logs/fastp.log",
     threads: 4
+    resources:
+        mem_mb=8000,
+        runtime=120,
     conda:
         "../envs/fastp.yaml"
     params:

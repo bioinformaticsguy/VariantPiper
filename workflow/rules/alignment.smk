@@ -82,7 +82,7 @@ rule picard_markduplicates:
         "{outdir}/{sample}/logs/picard_markduplicates.log",
     resources:
         mem_mb=16000,
-        runtime=120,
+        runtime=240,
     conda:
         "../envs/picard.yaml"
     shell:
