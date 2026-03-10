@@ -4,3 +4,4 @@ channels:
 dependencies:
   - delly>=1.2
   - bcftools>=1.17    # BCF indexing and VCF conversion
+  - libboost          # runtime dependency of delly (libboost_iostreams etc.)
