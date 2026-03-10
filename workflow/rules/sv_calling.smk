@@ -48,8 +48,7 @@ rule delly_call:
             -o {output.bcf} \
             {input.bam} \
             2> {log}
-
-        bcftools index {output.bcf} 2>> {log}
+        # delly >= 1.2 creates the .csi index automatically alongside the BCF
         """
 
 
