@@ -9,6 +9,7 @@
 # Usage: ./install.sh [options]
 #   -r, --ref-dir DIR             Reference genome directory (default: ./resources/reference)
 #   -s, --singularity-dir DIR     Singularity images directory (default: ./resources/singularity)
+#   -d, --delly-dir DIR           Delly resources directory (default: ./resources/delly)
 #   --deepvariant-version VER     DeepVariant version to pull (default: 1.6.1)
 #   --singularity-module NAME     Module name to load for Singularity (default: singularity)
 #   --skip-deepvariant            Skip DeepVariant Singularity image pull
@@ -23,6 +24,7 @@ set -e
 # ---------------------------------------------------------------------------
 REF_DIR="${PWD}/resources/reference"
 SINGULARITY_DIR="${PWD}/resources/singularity"
+DELLY_DIR="${PWD}/resources/delly"
 DEEPVARIANT_VERSION="1.6.1"
 SINGULARITY_MODULE="singularity"
 SKIP_DEEPVARIANT=false
@@ -54,6 +56,7 @@ Usage: ./install.sh [options]
 Options:
     -r, --ref-dir DIR             Reference genome directory (default: ./resources/reference)
     -s, --singularity-dir DIR     Singularity images directory (default: ./resources/singularity)
+    -d, --delly-dir DIR           Delly resources directory (default: ./resources/delly)
     --deepvariant-version VER     DeepVariant version to pull (default: 1.6.1)
     --singularity-module NAME     Module name for Singularity (default: singularity)
                                   Use this if your cluster loads it under a different name,
@@ -65,6 +68,7 @@ Options:
 This script will:
     1. Download UCSC hg38 reference genome FASTA (~970 MB compressed, ~3.2 GB uncompressed)
     2. Pull the DeepVariant Singularity image (~15 GB)
+    3. Download the Delly hg38 exclusion list (masks centromeres/telomeres, ~1 MB)
 
 Reference indexes (samtools faidx, BWA-MEM2) are NOT generated here.
 They are created automatically by Snakemake on the first pipeline run using
@@ -91,6 +95,7 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         -r|--ref-dir)              REF_DIR="$2";               shift 2 ;;
         -s|--singularity-dir)      SINGULARITY_DIR="$2";       shift 2 ;;
+        -d|--delly-dir)            DELLY_DIR="$2";             shift 2 ;;
         --deepvariant-version)     DEEPVARIANT_VERSION="$2";   shift 2 ;;
         --singularity-module)      SINGULARITY_MODULE="$2";    shift 2 ;;
         --skip-deepvariant)        SKIP_DEEPVARIANT=true;      shift ;;
@@ -263,6 +268,28 @@ pull_deepvariant() {
 }
 
 # ---------------------------------------------------------------------------
+# Step 3 — Delly hg38 exclusion list
+# ---------------------------------------------------------------------------
+download_delly_excl() {
+    log_info "Setting up Delly hg38 exclusion list..."
+    mkdir -p "$DELLY_DIR"
+
+    local excl="$DELLY_DIR/human.hg38.excl.tsv"
+
+    if [ ! -f "$excl" ] || [ "$FORCE" = true ]; then
+        download_file \
+            "https://raw.githubusercontent.com/dellytools/delly/main/excludeTemplates/human.hg38.excl.tsv" \
+            "$excl" \
+            "Delly hg38 exclusion list (~1 MB)" || return 1
+        log_success "Delly exclusion list saved: $excl"
+    else
+        log_info "Delly exclusion list already exists, skipping"
+    fi
+
+    log_success "Delly exclusion list ready: $excl"
+}
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print_summary() {
@@ -283,11 +310,15 @@ print_summary() {
         echo "  deepvariant_${DEEPVARIANT_VERSION}.sif"
     fi
     echo ""
+    echo "Delly resources in $DELLY_DIR:"
+    echo "  human.hg38.excl.tsv     — exclusion list (centromeres/telomeres)"
+    echo ""
     echo "Make sure config/config.yaml points to the correct paths:"
     echo "  reference:       \"$REF_DIR/hg38.fa\""
     if [ "$SKIP_DEEPVARIANT" = false ]; then
         echo "  deepvariant_sif: \"$SINGULARITY_DIR/deepvariant_${DEEPVARIANT_VERSION}.sif\""
     fi
+    echo "  delly.extra:     \"-x $DELLY_DIR/human.hg38.excl.tsv\""
     echo ""
     echo "To run the pipeline:"
     echo "  conda activate snakemake"
@@ -319,10 +350,12 @@ main() {
     else
         echo "  2. DeepVariant image pull              SKIPPED"
     fi
+    echo "  3. Download Delly hg38 exclusion list  (~1 MB)"
     echo ""
     echo "  Output directories:"
     echo "    Reference  : $REF_DIR"
     echo "    Singularity: $SINGULARITY_DIR"
+    echo "    Delly      : $DELLY_DIR"
     echo ""
 
     if [ -t 0 ]; then
@@ -340,6 +373,8 @@ main() {
     download_reference
     echo ""
     pull_deepvariant
+    echo ""
+    download_delly_excl
     echo ""
     print_summary
 }

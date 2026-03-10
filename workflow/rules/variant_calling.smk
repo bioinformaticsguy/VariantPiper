@@ -6,8 +6,8 @@
 # run_deepvariant runs three stages internally:
 #   1. make_examples      — pileup images from BAM + reference (parallelised
 #                           across --num_shards = threads)
-#   2. call_variants      — neural network inference
-#   3. postprocess_variants — converts output to VCF + gVCF
+#   2. call_snv_calls      — neural network inference
+#   3. postprocess_snv_calls — converts output to VCF + gVCF
 #
 # Outputs (all produced and indexed by DeepVariant itself):
 #   {sample}.vcf.gz / .vcf.gz.tbi   — SNV + indel calls
@@ -30,10 +30,10 @@ rule deepvariant:
         ref=config["reference"],
         fai=config["reference"] + ".fai",
     output:
-        vcf="{outdir}/{sample}/variants/{sample}.vcf.gz",
-        vcf_tbi="{outdir}/{sample}/variants/{sample}.vcf.gz.tbi",
-        gvcf="{outdir}/{sample}/variants/{sample}.g.vcf.gz",
-        gvcf_tbi="{outdir}/{sample}/variants/{sample}.g.vcf.gz.tbi",
+        vcf="{outdir}/{sample}/snv_calls/{sample}.vcf.gz",
+        vcf_tbi="{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi",
+        gvcf="{outdir}/{sample}/snv_calls/{sample}.g.vcf.gz",
+        gvcf_tbi="{outdir}/{sample}/snv_calls/{sample}.g.vcf.gz.tbi",
     log:
         "{outdir}/{sample}/logs/deepvariant.log",
     threads: 16

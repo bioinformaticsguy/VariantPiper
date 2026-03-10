@@ -2,9 +2,10 @@
 /input/
 /output/
 
-# downloaded resources (reference genome, indexes, singularity images)
+# downloaded resources (reference genome, indexes, singularity images, delly files)
 /resources/reference/
 /resources/singularity/
+/resources/delly/
 # keep the README
 !/resources/README.md
 

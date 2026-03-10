@@ -1,0 +1,6 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - delly>=1.2
+  - bcftools>=1.17    # BCF indexing and VCF conversion

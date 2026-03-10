@@ -24,6 +24,12 @@ outdir: "output"
 reference: "resources/reference/hg38.fa"
 
 # ---------------------------------------------------------------------------
+# Step 4 — SV calling (Delly)
+# ---------------------------------------------------------------------------
+delly:
+  extra: "-x resources/delly/human.hg38.excl.tsv"   # exclusion list downloaded by install.sh
+
+# ---------------------------------------------------------------------------
 # Step 3 — Variant calling (DeepVariant)
 # ---------------------------------------------------------------------------
 deepvariant:

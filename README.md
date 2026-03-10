@@ -8,8 +8,8 @@ A Snakemake pipeline for germline variant calling from paired-end Illumina WGS d
 |------|------|--------|
 | 1. Quality control | fastp | ready |
 | 2. Alignment | BWA-MEM2 | in progress |
-| 3. SNV/indel calling | DeepVariant | planned |
-| 4. SV calling | TBD | planned |
+| 3. SNV/indel calling | DeepVariant | ready |
+| 4. SV calling | Delly | ready |
 | 5. Cohort joint-genotyping | GATK | planned |
 
 ---
@@ -156,11 +156,14 @@ output/
     │   ├── {sample}.markdup.bam        ← duplicate-marked, sorted BAM
     │   ├── {sample}.markdup.bam.bai    ← BAM index
     │   └── {sample}.markdup_metrics.txt
-    └── variants/
-        ├── {sample}.vcf.gz             ← SNV + indel calls
-        ├── {sample}.vcf.gz.tbi         ← tabix index
-        ├── {sample}.g.vcf.gz           ← gVCF (for cohort genotyping)
-        └── {sample}.g.vcf.gz.tbi
+    ├── snv_calls/
+    │   ├── {sample}.vcf.gz             ← SNV + indel calls (DeepVariant)
+    │   ├── {sample}.vcf.gz.tbi
+    │   ├── {sample}.g.vcf.gz           ← gVCF (for cohort genotyping)
+    │   └── {sample}.g.vcf.gz.tbi
+    └── sv_calls/
+        ├── {sample}.sv.vcf.gz          ← structural variant calls (Delly)
+        └── {sample}.sv.vcf.gz.tbi
 ```
 
 > The intermediate sorted BAM (`{sample}.sorted.bam`) is automatically deleted
