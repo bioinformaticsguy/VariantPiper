@@ -10,8 +10,9 @@
 
 configfile: "config/config.yaml"
 
-SAMPLES = list(config["samples"].keys())
-OUTDIR  = config["outdir"]
+SAMPLES      = list(config["samples"].keys())
+OUTDIR       = config["outdir"]
+FILTER_PASS  = config.get("filter_pass", True)
 
 # -----------------------------------------------------------------------------
 # Rule modules (one per pipeline step)
@@ -45,7 +46,7 @@ rule all:
             outdir=OUTDIR,
             sample=SAMPLES,
         ),
-        # Step 3: SNV/indel calls (DeepVariant) — VCF + gVCF + indexes
+        # Step 3: SNV/indel calls (DeepVariant) — full VCF + gVCF + indexes
         expand(
             "{outdir}/{sample}/snv_calls/{sample}.vcf.gz",
             outdir=OUTDIR,
@@ -66,6 +67,17 @@ rule all:
             outdir=OUTDIR,
             sample=SAMPLES,
         ),
+        # Step 3: PASS-filtered SNV VCF (only when filter_pass: true)
+        *(expand(
+            "{outdir}/{sample}/snv_calls/{sample}.pass.vcf.gz",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ) if FILTER_PASS else []),
+        *(expand(
+            "{outdir}/{sample}/snv_calls/{sample}.pass.vcf.gz.tbi",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ) if FILTER_PASS else []),
         # Step 4: SV calls (Delly) — VCF + index
         expand(
             "{outdir}/{sample}/sv_calls/{sample}.sv.vcf.gz",

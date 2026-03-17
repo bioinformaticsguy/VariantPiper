@@ -10,8 +10,11 @@
 #   3. postprocess_snv_calls — converts output to VCF + gVCF
 #
 # Outputs (all produced and indexed by DeepVariant itself):
-#   {sample}.vcf.gz / .vcf.gz.tbi   — SNV + indel calls
-#   {sample}.g.vcf.gz / .g.vcf.gz.tbi — gVCF for future cohort genotyping
+#   {sample}.vcf.gz / .vcf.gz.tbi       — full SNV + indel calls (all variants)
+#   {sample}.g.vcf.gz / .g.vcf.gz.tbi   — gVCF for future cohort genotyping
+#
+# When filter_pass: true in config, filter_snv additionally produces:
+#   {sample}.pass.vcf.gz / .pass.vcf.gz.tbi — PASS variants only
 #
 # Prerequisites:
 #   - Singularity must be in PATH (load before submitting via the submit script)
@@ -66,4 +69,31 @@ rule deepvariant:
                 --intermediate_results_dir="$INTERMED" \
                 {params.extra} \
                 2> {log}
+        """
+
+
+rule filter_snv:
+    """
+    Filter DeepVariant VCF to PASS variants only.
+    Produces {sample}.pass.vcf.gz alongside the full {sample}.vcf.gz.
+    Only added to rule all targets when filter_pass: true in config.
+    The gVCF is never filtered — it must retain all sites for cohort genotyping.
+    """
+    input:
+        vcf="{outdir}/{sample}/snv_calls/{sample}.vcf.gz",
+        tbi="{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi",
+    output:
+        vcf="{outdir}/{sample}/snv_calls/{sample}.pass.vcf.gz",
+        tbi="{outdir}/{sample}/snv_calls/{sample}.pass.vcf.gz.tbi",
+    log:
+        "{outdir}/{sample}/logs/filter_snv.log",
+    resources:
+        mem_mb=4000,
+        runtime=30,
+    conda:
+        "../envs/samtools.yaml"
+    shell:
+        """
+        bcftools view -f PASS -O z -o {output.vcf} {input.vcf} 2> {log}
+        bcftools index -t {output.vcf} 2>> {log}
         """

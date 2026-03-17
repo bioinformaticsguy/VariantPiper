@@ -72,12 +72,14 @@ rule delly_filter:
     resources:
         mem_mb=8000,
         runtime=60,
+    params:
+        filter="-f PASS" if config.get("filter_pass", True) else "-f 'PASS,.'",
     conda:
         "../envs/delly.yaml"
     shell:
         """
         bcftools view \
-            -f "PASS,." \
+            {params.filter} \
             -O z \
             -o {output.vcf} \
             {input.bcf} \

@@ -24,6 +24,15 @@ outdir: "output"
 reference: "resources/reference/hg38.fa"
 
 # ---------------------------------------------------------------------------
+# Output filtering
+# When true: keep only PASS variants in the final SNV and SV VCFs.
+# SNVs: produces {sample}.pass.vcf.gz alongside the full DeepVariant VCF.
+# SVs:  the single {sample}.sv.vcf.gz contains only PASS-filtered calls.
+# Set to false to skip filtering and keep all variants.
+# ---------------------------------------------------------------------------
+filter_pass: true
+
+# ---------------------------------------------------------------------------
 # Step 4 — SV calling (Delly)
 # ---------------------------------------------------------------------------
 delly:
