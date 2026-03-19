@@ -4,7 +4,7 @@
 #SBATCH --time=1-00:00:00
 #SBATCH --nodes=1
 #SBATCH -c 16
-#SBATCH --mem=200GB
+#SBATCH --mem=64GB
 #SBATCH --job-name=variantpiper
 #SBATCH --output=logs/slurm_%j_%u_%N.out
 #SBATCH --error=logs/slurm_%j_%u_%N.err
@@ -12,18 +12,26 @@
 #SBATCH --mail-user=alihassan1697@gmail.com
 
 # ============================================================
-# VariantPiper — SLURM Submission Script
+# VariantPiper — generic SLURM submission script
 # ============================================================
-# Runs the full pipeline inside a single SLURM job.
-# All steps (including BWA-MEM2 indexing) execute on the
-# allocated node — no nested SLURM job submission.
+# Usage:
+#   sbatch submit_job.sh [config/config.yaml]
 #
-# Resources:
-#   16 CPUs  — used by bwa-mem2 mem (--threads 16)
-#   200 GB   — required by bwa-mem2 index (~143 GB peak on hg38, still growing)
+# Config defaults to config/config.yaml if not provided.
 #
-# Submit with: sbatch submit_job.sh
+# Override any SLURM resource at submission time, e.g.:
+#   sbatch --time=2-00:00:00 submit_job.sh config/config_HG002.yaml
+#   sbatch --mem=200GB submit_job.sh              # first run: BWA-MEM2 index
+#   sbatch --job-name=HG002 submit_job.sh config/config_HG002.yaml
+#
+# Prerequisites:
+#   - BWA-MEM2 index must already exist (resources/reference/)
+#     If not: sbatch --mem=200GB submit_job.sh to build it first.
+#   - DeepVariant Singularity image and Delly exclusion list must exist.
+#     Run install.sh --skip-deepvariant if only the exclusion list is missing.
 # ============================================================
+
+CONFIGFILE="${1:-config/config.yaml}"
 
 # --- Singularity ---
 module load singularity/v4.1.3
@@ -50,14 +58,15 @@ echo "Working directory: $(pwd)"
 echo "Snakemake version: $(snakemake --version)"
 echo "Date:              $(date)"
 echo "CPUs:              ${SLURM_CPUS_PER_TASK}"
-echo "Memory:            128 GB"
+echo "Memory:            ${SLURM_MEM_PER_NODE:-unknown} MB"
+echo "Config:            $CONFIGFILE"
 echo "Run log:           $RUN_LOG"
 echo "=============================================="
 
 # --- Run ---
 snakemake \
     --snakefile workflow/Snakefile \
-    --configfile config/config.yaml \
+    --configfile "$CONFIGFILE" \
     --use-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
     --rerun-incomplete

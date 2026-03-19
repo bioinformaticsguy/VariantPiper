@@ -1,0 +1,60 @@
+# =============================================================================
+# VariantPiper — configuration for HG002 (GIAB benchmark, 30x WGS)
+# =============================================================================
+# Sample: HG002 (NA24385) — Genome in a Bottle benchmark sample
+# Sequencer: Element Biosciences Onso (short-read, Illumina-like chemistry)
+# Data: PCR-free WGS, 30x, pre-trimmed (OSQ_trimmed)
+# Note: reads are already adapter-trimmed; fastp will run for QC only.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Samples
+# ---------------------------------------------------------------------------
+samples:
+  HG002:
+    R1: "/data/humangen_kircherlab/Users/hassan/data/giab/hg002_30x_WGS/Onso_hg002_PCR_free_WGS_OSQ_trimmed_R1.fastq.gz"
+    R2: "/data/humangen_kircherlab/Users/hassan/data/giab/hg002_30x_WGS/Onso_hg002_PCR_free_WGS_OSQ_trimmed_R2.fastq.gz"
+
+# ---------------------------------------------------------------------------
+# Output directory
+# ---------------------------------------------------------------------------
+outdir: "output"
+
+# ---------------------------------------------------------------------------
+# Reference genome
+# ---------------------------------------------------------------------------
+reference: "resources/reference/hg38.fa"
+
+# ---------------------------------------------------------------------------
+# Output filtering
+# ---------------------------------------------------------------------------
+filter_pass: true
+
+# ---------------------------------------------------------------------------
+# Step 4 — SV calling (Delly)
+# ---------------------------------------------------------------------------
+delly:
+  extra: "-x resources/delly/human.hg38.excl.tsv"   # exclusion list downloaded by install.sh
+
+# ---------------------------------------------------------------------------
+# Step 3 — Variant calling (DeepVariant)
+# ---------------------------------------------------------------------------
+deepvariant:
+  sif: "resources/singularity/deepvariant_1.6.1.sif"
+  model_type: "WGS"       # WGS model is appropriate for Onso short-read data
+  singularity_bind: "/data"
+  extra: ""
+
+# ---------------------------------------------------------------------------
+# Step 2 — Alignment (BWA-MEM2)
+# ---------------------------------------------------------------------------
+bwa_mem2:
+  extra: ""
+
+# ---------------------------------------------------------------------------
+# Step 1 — QC (fastp)
+# ---------------------------------------------------------------------------
+fastp:
+  min_read_length: 50
+  qualified_quality_phred: 20
+  extra: ""
