@@ -46,7 +46,7 @@ rule deepvariant:
     params:
         sif=config["deepvariant"]["sif"],
         model_type=config["deepvariant"]["model_type"],
-        bind=config["deepvariant"]["singularity_bind"],
+        bind=config.get("singularity_bind", config["deepvariant"]["singularity_bind"]),
         extra=config["deepvariant"].get("extra", ""),
     shell:
         """

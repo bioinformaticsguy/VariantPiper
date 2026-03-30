@@ -68,6 +68,7 @@ echo "=============================================="
 snakemake \
     --snakefile workflow/Snakefile \
     --configfile "$CONFIGFILE" \
+    --config singularity_bind="/data/cephfs-1" \
     --use-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
     --rerun-incomplete
