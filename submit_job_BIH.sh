@@ -34,8 +34,8 @@
 CONFIGFILE="${1:-config/config.yaml}"
 
 # --- Singularity ---
-# Update this if the module name differs on this cluster
-module load singularity
+# Apptainer (Singularity successor) is pre-installed as a system package on this cluster.
+# No module load needed — singularity/apptainer is already in PATH.
 
 # --- Conda setup ---
 MINIFORGE_PATH="/data/cephfs-1/work/groups/kircher/users/alhassa_m/miniforge"
