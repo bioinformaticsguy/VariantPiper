@@ -12,17 +12,17 @@
 #SBATCH --mail-user=alihassan1697@gmail.com
 
 # ============================================================
-# VariantPiper — generic SLURM submission script
+# VariantPiper — SLURM submission script (omics cluster)
 # ============================================================
 # Usage:
-#   sbatch submit_job.sh [config/config.yaml]
+#   sbatch submit_job_omics.sh [config/config.yaml]
 #
 # Config defaults to config/config.yaml if not provided.
 #
 # Override any SLURM resource at submission time, e.g.:
-#   sbatch --time=2-00:00:00 submit_job.sh config/config_HG002.yaml
-#   sbatch --mem=200GB submit_job.sh              # first run: BWA-MEM2 index
-#   sbatch --job-name=HG002 submit_job.sh config/config_HG002.yaml
+#   sbatch --time=2-00:00:00 submit_job_omics.sh config/config_HG002.yaml
+#   sbatch --mem=200GB submit_job_omics.sh              # first run: BWA-MEM2 index
+#   sbatch --job-name=HG002 submit_job_omics.sh config/config_HG002.yaml
 #
 # Prerequisites:
 #   - BWA-MEM2 index must already exist (resources/reference/)

@@ -15,9 +15,16 @@
 # VariantPiper — SLURM submission script (BIH HPC)
 # ============================================================
 # Usage:
-#   sbatch submit_job_BIH.sh [config/config.yaml]
+#   sbatch submit_job_BIH.sh [config/config.yaml] [extra snakemake args...]
 #
 # Config defaults to config/config.yaml if not provided.
+# Any arguments after the config file are passed directly to Snakemake,
+# allowing per-run overrides without editing config files:
+#
+#   # Run a sample defined inline (no separate config file needed):
+#   sbatch submit_job_BIH.sh config/config.yaml \
+#     --config 'samples={"MYSAMPLE": {"R1": "/path/R1.fastq.gz", "R2": "/path/R2.fastq.gz"}}' \
+#     --config singularity_bind="/data/cephfs-2"
 #
 # Override any SLURM resource at submission time, e.g.:
 #   sbatch --partition=highmem --mem=200GB submit_job_BIH.sh   # first run: BWA-MEM2 index
@@ -32,6 +39,7 @@
 # ============================================================
 
 CONFIGFILE="${1:-config/config.yaml}"
+shift || true   # remaining args (if any) are passed to Snakemake below
 
 # --- Singularity ---
 # Apptainer (Singularity successor) is pre-installed as a system package on this cluster.
@@ -71,7 +79,8 @@ snakemake \
     --config singularity_bind="/data/cephfs-1" \
     --use-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
-    --rerun-incomplete
+    --rerun-incomplete \
+    "${@}"
 
 EXIT_CODE=$?
 
