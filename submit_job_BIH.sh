@@ -9,7 +9,7 @@
 #SBATCH --output=logs/slurm_%j_%u_%N.out
 #SBATCH --error=logs/slurm_%j_%u_%N.err
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=alihassan1697@gmail.com
+#SBATCH --mail-user=Ali.Hassan@mdc-berlin.de
 
 # ============================================================
 # VariantPiper — SLURM submission script (BIH HPC)
