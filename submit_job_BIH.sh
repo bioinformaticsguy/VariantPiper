@@ -15,31 +15,37 @@
 # VariantPiper — SLURM submission script (BIH HPC)
 # ============================================================
 # Usage:
-#   sbatch submit_job_BIH.sh [config/config.yaml] [extra snakemake args...]
+#   sbatch submit_job_BIH.sh <configfile> [sample_id R1 R2]
 #
-# Config defaults to config/config.yaml if not provided.
-# Any arguments after the config file are passed directly to Snakemake,
-# allowing per-run overrides without editing config files:
+# Examples:
+#   # Use a config file (standard):
+#   sbatch submit_job_BIH.sh config/config_HG002.yaml
 #
-#   # Run a sample defined inline (no separate config file needed):
-#   sbatch submit_job_BIH.sh config/config.yaml \
-#     --config 'samples={"MYSAMPLE": {"R1": "/path/R1.fastq.gz", "R2": "/path/R2.fastq.gz"}}' \
-#     --config singularity_bind="/data/cephfs-2"
+#   # Override sample inline — no separate config file needed:
+#   sbatch submit_job_BIH.sh config/config.yaml A4842 \
+#     /data/cephfs-2/.../R1.fastq.gz \
+#     /data/cephfs-2/.../R2.fastq.gz
+#
+# The inline sample replaces whatever samples are in the config file.
+# The singularity bind path is set to /data/cephfs-1 by default;
+# if R1/R2 live on a different filesystem (e.g. cephfs-2), the script
+# automatically extends the bind to cover both.
 #
 # Override any SLURM resource at submission time, e.g.:
-#   sbatch --partition=highmem --mem=200GB submit_job_BIH.sh   # first run: BWA-MEM2 index
-#   sbatch --time=2-00:00:00 submit_job_BIH.sh config/config_HG002.yaml
-#   sbatch --job-name=HG002 submit_job_BIH.sh config/config_HG002.yaml
+#   sbatch --partition=highmem --mem=200GB submit_job_BIH.sh config/config.yaml
+#   sbatch --time=2-00:00:00 --job-name=A4842 submit_job_BIH.sh config/config.yaml A4842 R1 R2
 #
 # Prerequisites:
 #   - BWA-MEM2 index must already exist (resources/reference/)
-#     If not: sbatch --partition=highmem --mem=200GB submit_job_BIH.sh
+#     If not: sbatch --partition=highmem --mem=200GB submit_job_BIH.sh config/config.yaml
 #   - DeepVariant Singularity image and Delly exclusion list must exist.
 #     Run install.sh --skip-deepvariant if only the exclusion list is missing.
 # ============================================================
 
 CONFIGFILE="${1:-config/config.yaml}"
-shift || true   # remaining args (if any) are passed to Snakemake below
+SAMPLE_ID="${2:-}"
+SAMPLE_R1="${3:-}"
+SAMPLE_R2="${4:-}"
 
 # --- Singularity ---
 # Apptainer (Singularity successor) is pre-installed as a system package on this cluster.
@@ -69,18 +75,42 @@ echo "Date:              $(date)"
 echo "CPUs:              ${SLURM_CPUS_PER_TASK}"
 echo "Memory:            ${SLURM_MEM_PER_NODE:-unknown} MB"
 echo "Config:            $CONFIGFILE"
+if [ -n "$SAMPLE_ID" ]; then
+    echo "Sample (inline):   $SAMPLE_ID"
+    echo "  R1: $SAMPLE_R1"
+    echo "  R2: $SAMPLE_R2"
+fi
 echo "Run log:           $RUN_LOG"
 echo "=============================================="
+
+# --- Build Snakemake config overrides ---
+
+# Singularity bind: always include cephfs-1 (reference + output);
+# extend to cover the filesystem where R1/R2 live if different.
+BIND="/data/cephfs-1"
+if [ -n "$SAMPLE_R1" ]; then
+    R1_ROOT=$(echo "$SAMPLE_R1" | grep -oP '^/[^/]+/[^/]+' || echo "")
+    if [ -n "$R1_ROOT" ] && [ "$R1_ROOT" != "/data/cephfs-1" ]; then
+        BIND="${BIND},${R1_ROOT}"
+    fi
+fi
+
+EXTRA_CONFIG="singularity_bind=\"${BIND}\""
+
+# Inline sample override: build the samples dict in bash (avoids sbatch quoting issues)
+if [ -n "$SAMPLE_ID" ] && [ -n "$SAMPLE_R1" ] && [ -n "$SAMPLE_R2" ]; then
+    SAMPLES_JSON="{\"${SAMPLE_ID}\": {\"R1\": \"${SAMPLE_R1}\", \"R2\": \"${SAMPLE_R2}\"}}"
+    EXTRA_CONFIG="${EXTRA_CONFIG} samples=${SAMPLES_JSON}"
+fi
 
 # --- Run ---
 snakemake \
     --snakefile workflow/Snakefile \
     --configfile "$CONFIGFILE" \
-    --config singularity_bind="/data/cephfs-1" \
+    --config $EXTRA_CONFIG \
     --use-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
-    --rerun-incomplete \
-    "${@}"
+    --rerun-incomplete
 
 EXIT_CODE=$?
 
