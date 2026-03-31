@@ -3,3 +3,4 @@ channels:
   - bioconda
 dependencies:
   - fastp>=0.23
+  - isa-l
