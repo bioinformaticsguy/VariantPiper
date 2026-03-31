@@ -84,6 +84,8 @@ echo "Run log:           $RUN_LOG"
 echo "=============================================="
 
 # --- Build Snakemake config overrides ---
+# Use a bash array so each --config item is passed as a single quoted token,
+# avoiding word-splitting on spaces inside JSON values.
 
 # Singularity bind: always include cephfs-1 (reference + output);
 # extend to cover the filesystem where R1/R2 live if different.
@@ -95,19 +97,19 @@ if [ -n "$SAMPLE_R1" ]; then
     fi
 fi
 
-EXTRA_CONFIG="singularity_bind=\"${BIND}\""
+CONFIG_ARGS=(--config "singularity_bind=${BIND}")
 
-# Inline sample override: build the samples dict in bash (avoids sbatch quoting issues)
+# Inline sample override: compact JSON (no spaces) avoids word-splitting
 if [ -n "$SAMPLE_ID" ] && [ -n "$SAMPLE_R1" ] && [ -n "$SAMPLE_R2" ]; then
-    SAMPLES_JSON="{\"${SAMPLE_ID}\": {\"R1\": \"${SAMPLE_R1}\", \"R2\": \"${SAMPLE_R2}\"}}"
-    EXTRA_CONFIG="${EXTRA_CONFIG} samples=${SAMPLES_JSON}"
+    SAMPLES_JSON="{\"${SAMPLE_ID}\":{\"R1\":\"${SAMPLE_R1}\",\"R2\":\"${SAMPLE_R2}\"}}"
+    CONFIG_ARGS+=(--config "samples=${SAMPLES_JSON}")
 fi
 
 # --- Run ---
 snakemake \
     --snakefile workflow/Snakefile \
     --configfile "$CONFIGFILE" \
-    --config $EXTRA_CONFIG \
+    "${CONFIG_ARGS[@]}" \
     --use-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
     --rerun-incomplete
