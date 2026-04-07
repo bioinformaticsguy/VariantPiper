@@ -105,6 +105,12 @@ if [ -n "$SAMPLE_ID" ] && [ -n "$SAMPLE_R1" ] && [ -n "$SAMPLE_R2" ]; then
     CONFIG_ARGS+=(--config "samples=${SAMPLES_JSON}")
 fi
 
+# --- Refresh mtimes so scratch cleanup does not delete resource files ---
+# Scratch deletes files not modified for 14 days using mtime. Downloaded/decompressed
+# files may carry old mtimes from the source server. Touch them before each run.
+touch resources/reference/hg38.fa resources/reference/hg38.fa.* \
+      resources/singularity/*.sif resources/delly/*.tsv 2>/dev/null || true
+
 # --- Run ---
 snakemake \
     --snakefile workflow/Snakefile \

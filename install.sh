@@ -235,6 +235,7 @@ download_reference() {
 
         log_info "Decompressing reference (~3.2 GB)..."
         gunzip -k "$ref_gz"
+        touch "$ref_fa"   # reset mtime to now — scratch systems delete files with old mtimes
         log_success "Decompressed: $ref_fa"
     else
         log_info "Reference FASTA already exists, skipping"
