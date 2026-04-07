@@ -111,6 +111,7 @@ snakemake \
     --configfile "$CONFIGFILE" \
     "${CONFIG_ARGS[@]}" \
     --use-conda \
+    --conda-prefix /data/cephfs-1/work/groups/kircher/users/alhassa_m/snakemake-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
     --rerun-incomplete
 
