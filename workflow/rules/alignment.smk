@@ -88,6 +88,7 @@ rule picard_markduplicates:
     shell:
         """
         picard MarkDuplicates \
+            --java-options "-Xmx14g" \
             -I {input.bam} \
             -O {output.bam} \
             -M {output.metrics} \
