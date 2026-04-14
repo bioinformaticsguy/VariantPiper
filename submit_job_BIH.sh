@@ -114,6 +114,9 @@ touch resources/reference/hg38.fa 2>/dev/null || true
 touch resources/reference/hg38.fa.* 2>/dev/null || true
 touch resources/singularity/*.sif resources/delly/*.tsv 2>/dev/null || true
 
+# --- Unlock in case a previous job was killed or timed out ---
+snakemake --snakefile workflow/Snakefile --configfile "$CONFIGFILE" --unlock 2>/dev/null || true
+
 # --- Run ---
 snakemake \
     --snakefile workflow/Snakefile \
