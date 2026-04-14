@@ -108,8 +108,11 @@ fi
 # --- Refresh mtimes so scratch cleanup does not delete resource files ---
 # Scratch deletes files not modified for 14 days using mtime. Downloaded/decompressed
 # files may carry old mtimes from the source server. Touch them before each run.
-touch resources/reference/hg38.fa resources/reference/hg38.fa.* \
-      resources/singularity/*.sif resources/delly/*.tsv 2>/dev/null || true
+# IMPORTANT: touch hg38.fa FIRST, then index files — Snakemake considers indexes
+# stale if the FASTA is newer, which would trigger a 200 GB index rebuild.
+touch resources/reference/hg38.fa 2>/dev/null || true
+touch resources/reference/hg38.fa.* 2>/dev/null || true
+touch resources/singularity/*.sif resources/delly/*.tsv 2>/dev/null || true
 
 # --- Run ---
 snakemake \
