@@ -33,8 +33,19 @@ reference: "resources/reference/hg38.fa"
 filter_pass: true
 
 # ---------------------------------------------------------------------------
-# Step 4 — SV calling (Delly)
+# Step 4 — SV calling
+# sv_caller selects which tool is used. Both rule sets are always compiled;
+# only the active caller's rules are executed.
+#   manta  — Illumina Manta v1.6.0 (default, recommended for WGS)
+#   delly  — EMBL-EBI Delly
 # ---------------------------------------------------------------------------
+sv_caller: manta
+
+# Manta settings
+manta:
+  extra: ""   # additional configManta.py flags (e.g. --callRegions bed.gz for targeted)
+
+# Delly settings (used when sv_caller: delly)
 delly:
   extra: "-x resources/delly/human.hg38.excl.tsv"   # exclusion list downloaded by install.sh
 

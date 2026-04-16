@@ -26,10 +26,15 @@ reference: "resources/reference/hg38.fa"
 filter_pass: true
 
 # ---------------------------------------------------------------------------
-# Step 4 — SV calling (Delly)
+# Step 4 — SV calling
 # ---------------------------------------------------------------------------
+sv_caller: manta   # manta (default) or delly
+
+manta:
+  extra: ""
+
 delly:
-  extra: "-x resources/delly/human.hg38.excl.tsv"   # exclusion list downloaded by install.sh
+  extra: "-x resources/delly/human.hg38.excl.tsv"
 
 # ---------------------------------------------------------------------------
 # Step 3 — Variant calling (DeepVariant)

@@ -78,7 +78,7 @@ rule all:
             outdir=OUTDIR,
             sample=SAMPLES,
         ) if FILTER_PASS else []),
-        # Step 4: SV calls (Delly) — VCF + index
+        # Step 4: SV calls (Manta or Delly, see sv_caller in config) — VCF + index
         expand(
             "{outdir}/{sample}/sv_calls/{sample}.sv.vcf.gz",
             outdir=OUTDIR,
