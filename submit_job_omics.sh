@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=shortterm
-#SBATCH --time=1-00:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --nodes=1
 #SBATCH -c 16
 #SBATCH --mem=64GB
@@ -15,23 +15,28 @@
 # VariantPiper — SLURM submission script (omics cluster)
 # ============================================================
 # Usage:
-#   sbatch submit_job_omics.sh [config/config.yaml]
+#   sbatch submit_job_omics.sh <configfile> [sample_id R1 R2]
 #
-# Config defaults to config/config.yaml if not provided.
+# Examples:
+#   # Use a config file (standard):
+#   sbatch submit_job_omics.sh config/config.yaml
+#
+#   # Override sample inline — no separate config file needed:
+#   sbatch submit_job_omics.sh config/config.yaml HG002 \
+#     /data/.../R1.fastq.gz \
+#     /data/.../R2.fastq.gz
+#
+# The inline sample replaces whatever samples are in the config file.
 #
 # Override any SLURM resource at submission time, e.g.:
-#   sbatch --time=2-00:00:00 submit_job_omics.sh config/config_HG002.yaml
-#   sbatch --mem=200GB submit_job_omics.sh              # first run: BWA-MEM2 index
-#   sbatch --job-name=HG002 submit_job_omics.sh config/config_HG002.yaml
-#
-# Prerequisites:
-#   - BWA-MEM2 index must already exist (resources/reference/)
-#     If not: sbatch --mem=200GB submit_job.sh to build it first.
-#   - DeepVariant Singularity image and Delly exclusion list must exist.
-#     Run install.sh --skip-deepvariant if only the exclusion list is missing.
+#   sbatch --mem=200GB submit_job_omics.sh config/config.yaml   # BWA-MEM2 index build
+#   sbatch --time=2-00:00:00 submit_job_omics.sh config/config.yaml
 # ============================================================
 
 CONFIGFILE="${1:-config/config.yaml}"
+SAMPLE_ID="${2:-}"
+SAMPLE_R1="${3:-}"
+SAMPLE_R2="${4:-}"
 
 # --- Singularity ---
 module load singularity/v4.1.3
@@ -50,7 +55,7 @@ RUN_LOG="logs/run_${TIMESTAMP}_${SLURM_JOB_ID:-interactive}.log"
 exec > >(tee -a "$RUN_LOG") 2>&1
 
 echo "=============================================="
-echo "  VariantPiper"
+echo "  VariantPiper (omics cluster)"
 echo "=============================================="
 echo "Job ID:            ${SLURM_JOB_ID:-interactive}"
 echo "Node:              $(hostname)"
@@ -60,14 +65,32 @@ echo "Date:              $(date)"
 echo "CPUs:              ${SLURM_CPUS_PER_TASK}"
 echo "Memory:            ${SLURM_MEM_PER_NODE:-unknown} MB"
 echo "Config:            $CONFIGFILE"
+if [ -n "$SAMPLE_ID" ]; then
+    echo "Sample (inline):   $SAMPLE_ID"
+    echo "  R1: $SAMPLE_R1"
+    echo "  R2: $SAMPLE_R2"
+fi
 echo "Run log:           $RUN_LOG"
 echo "=============================================="
+
+# --- Build Snakemake config overrides ---
+CONFIG_ARGS=(--config "singularity_bind=/data")
+
+if [ -n "$SAMPLE_ID" ] && [ -n "$SAMPLE_R1" ] && [ -n "$SAMPLE_R2" ]; then
+    SAMPLES_JSON="{\"${SAMPLE_ID}\":{\"R1\":\"${SAMPLE_R1}\",\"R2\":\"${SAMPLE_R2}\"}}"
+    CONFIG_ARGS+=(--config "samples=${SAMPLES_JSON}")
+fi
+
+# --- Unlock in case a previous job was killed or timed out ---
+snakemake --snakefile workflow/Snakefile --configfile "$CONFIGFILE" --unlock 2>/dev/null || true
 
 # --- Run ---
 snakemake \
     --snakefile workflow/Snakefile \
     --configfile "$CONFIGFILE" \
+    "${CONFIG_ARGS[@]}" \
     --use-conda \
+    --conda-prefix /work/hassan/hassan/snakemake-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
     --rerun-incomplete
 
