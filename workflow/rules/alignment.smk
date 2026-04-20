@@ -87,8 +87,7 @@ rule picard_markduplicates:
         "../envs/picard.yaml"
     shell:
         """
-        picard MarkDuplicates \
-            --java-options "-Xmx14g" \
+        JAVA_TOOL_OPTIONS="-Xmx14g" picard MarkDuplicates \
             -I {input.bam} \
             -O {output.bam} \
             -M {output.metrics} \
