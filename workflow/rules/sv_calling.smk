@@ -104,8 +104,8 @@ rule manta_call:
             --runDir {params.rundir} \
             2> {log}
 
-        # Step 2: run the Manta workflow
-        {params.rundir}/runWorkflow.py \
+        # Step 2: run the Manta workflow (call with python explicitly to bypass shebang issues)
+        python {params.rundir}/runWorkflow.py \
             -m local \
             -j {threads} \
             2>> {log}
