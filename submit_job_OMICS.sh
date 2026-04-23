@@ -4,7 +4,7 @@
 #SBATCH --time=3-00:00:00
 #SBATCH --nodes=1
 #SBATCH -c 16
-#SBATCH --mem=64GB
+#SBATCH --mem=128GB
 #SBATCH --job-name=variantpiper
 #SBATCH --output=logs/slurm_%j_%u_%N.out
 #SBATCH --error=logs/slurm_%j_%u_%N.err
@@ -15,28 +15,22 @@
 # VariantPiper — SLURM submission script (omics cluster)
 # ============================================================
 # Usage:
-#   sbatch submit_job_omics.sh <configfile> [sample_id R1 R2]
+#   sbatch submit_job_OMICS.sh <configfile> [samplesheet]
 #
 # Examples:
-#   # Use a config file (standard):
-#   sbatch submit_job_omics.sh config/config.yaml
+#   # Config already has samplesheet: key:
+#   sbatch submit_job_OMICS.sh config/config_batch.yaml
 #
-#   # Override sample inline — no separate config file needed:
-#   sbatch submit_job_omics.sh config/config.yaml HG002 \
-#     /data/.../R1.fastq.gz \
-#     /data/.../R2.fastq.gz
-#
-# The inline sample replaces whatever samples are in the config file.
+#   # Override samplesheet at submission time:
+#   sbatch submit_job_OMICS.sh config/config_batch.yaml samplesheets/A4842_DNA_25.tsv
 #
 # Override any SLURM resource at submission time, e.g.:
-#   sbatch --mem=200GB submit_job_omics.sh config/config.yaml   # BWA-MEM2 index build
-#   sbatch --time=2-00:00:00 submit_job_omics.sh config/config.yaml
+#   sbatch --mem=200GB submit_job_OMICS.sh config/config.yaml   # BWA-MEM2 index build
+#   sbatch --time=2-00:00:00 submit_job_OMICS.sh config/config.yaml
 # ============================================================
 
 CONFIGFILE="${1:-config/config.yaml}"
-SAMPLE_ID="${2:-}"
-SAMPLE_R1="${3:-}"
-SAMPLE_R2="${4:-}"
+SAMPLESHEET="${2:-}"
 
 # --- Singularity ---
 module load singularity/v4.1.3
@@ -65,10 +59,8 @@ echo "Date:              $(date)"
 echo "CPUs:              ${SLURM_CPUS_PER_TASK}"
 echo "Memory:            ${SLURM_MEM_PER_NODE:-unknown} MB"
 echo "Config:            $CONFIGFILE"
-if [ -n "$SAMPLE_ID" ]; then
-    echo "Sample (inline):   $SAMPLE_ID"
-    echo "  R1: $SAMPLE_R1"
-    echo "  R2: $SAMPLE_R2"
+if [ -n "$SAMPLESHEET" ]; then
+    echo "Samplesheet:       $SAMPLESHEET"
 fi
 echo "Run log:           $RUN_LOG"
 echo "=============================================="
@@ -76,9 +68,8 @@ echo "=============================================="
 # --- Build Snakemake config overrides ---
 CONFIG_ARGS=(--config "singularity_bind=/data")
 
-if [ -n "$SAMPLE_ID" ] && [ -n "$SAMPLE_R1" ] && [ -n "$SAMPLE_R2" ]; then
-    SAMPLES_JSON="{\"${SAMPLE_ID}\":{\"R1\":\"${SAMPLE_R1}\",\"R2\":\"${SAMPLE_R2}\"}}"
-    CONFIG_ARGS+=(--config "samples=${SAMPLES_JSON}")
+if [ -n "$SAMPLESHEET" ]; then
+    CONFIG_ARGS+=(--config "samplesheet=${SAMPLESHEET}")
 fi
 
 # --- Unlock in case a previous job was killed or timed out ---
