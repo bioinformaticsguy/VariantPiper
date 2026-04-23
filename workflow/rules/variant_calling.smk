@@ -48,6 +48,11 @@ rule deepvariant:
         model_type=config["deepvariant"]["model_type"],
         bind=config.get("singularity_bind", config["deepvariant"]["singularity_bind"]),
         extra=config["deepvariant"].get("extra", ""),
+        # postprocess_variants spawns one Python worker per CPU; each worker
+        # loads gVCF records into memory, so limiting this to 4 is enough to
+        # prevent OOM on 30x WGS samples (~6M gVCF entries) without slowing
+        # down the CPU-bound make_examples and call_variants stages.
+        postprocess_cpus=config["deepvariant"].get("postprocess_cpus", 4),
     shell:
         """
         # Temporary directory for make_examples intermediate files (~10-30 GB).
@@ -66,6 +71,7 @@ rule deepvariant:
                 --output_vcf={output.vcf} \
                 --output_gvcf={output.gvcf} \
                 --num_shards={threads} \
+                --postprocess_cpus={params.postprocess_cpus} \
                 --intermediate_results_dir="$INTERMED" \
                 {params.extra} \
                 2> {log}

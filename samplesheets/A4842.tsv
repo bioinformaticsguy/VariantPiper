@@ -1,0 +1,2 @@
+sample	lane	fastq_1	fastq_2	sex	phenotype	paternal_id	maternal_id	case_id
+A4842	1	/data/humangen_sfb1665_seqdata/short_read/raw/A4842/A4842_DNA_01/A4842_DNA_01_S1_L001_R1_001.fastq.gz	/data/humangen_sfb1665_seqdata/short_read/raw/A4842/A4842_DNA_01/A4842_DNA_01_S1_L001_R2_001.fastq.gz	0	2

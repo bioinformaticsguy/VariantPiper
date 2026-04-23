@@ -3,12 +3,9 @@
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Samples
+# Sample sheet
 # ---------------------------------------------------------------------------
-samples:
-  A4842:
-    R1: "/data/humangen_sfb1665_seqdata/short_read/raw/A4842/A4842_DNA_01/A4842_DNA_01_S1_L001_R1_001.fastq.gz"
-    R2: "/data/humangen_sfb1665_seqdata/short_read/raw/A4842/A4842_DNA_01/A4842_DNA_01_S1_L001_R2_001.fastq.gz"
+samplesheet: "samplesheets/A4842.tsv"
 
 # ---------------------------------------------------------------------------
 # Output directory
@@ -24,6 +21,11 @@ reference: "resources/reference/hg38.fa"
 # Output filtering
 # ---------------------------------------------------------------------------
 filter_pass: true
+
+# ---------------------------------------------------------------------------
+# Cleanup trimmed FASTQs after alignment completes
+# ---------------------------------------------------------------------------
+cleanup_trimmed: true
 
 # ---------------------------------------------------------------------------
 # Step 4 — SV calling
@@ -43,6 +45,7 @@ deepvariant:
   sif: "resources/singularity/deepvariant_1.6.1.sif"
   model_type: "WGS"
   singularity_bind: "/data"
+  postprocess_cpus: 16
   extra: ""
 
 # ---------------------------------------------------------------------------

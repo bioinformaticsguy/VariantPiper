@@ -10,6 +10,53 @@
 
 configfile: "config/config.yaml"
 
+# ---------------------------------------------------------------------------
+# Sample loading
+# ---------------------------------------------------------------------------
+# Provide samples via a TSV samplesheet (recommended) or inline in the config.
+#
+# TSV format (one row per lane, grouped by sample):
+#   sample  lane  fastq_1  fastq_2  sex  phenotype  paternal_id  maternal_id  case_id
+#
+# Point to the sheet with:  samplesheet: samplesheets/my_run.tsv
+# Or on the command line:   --config samplesheet=samplesheets/my_run.tsv
+#
+# Rows with the same sample ID are combined: multiple lanes → list of paths
+# passed to fastp via process substitution (no temp concat file written).
+# ---------------------------------------------------------------------------
+import csv as _csv
+from collections import defaultdict as _defaultdict
+
+
+def _load_samplesheet(path):
+    samples = _defaultdict(lambda: {"R1": [], "R2": []})
+    with open(path) as fh:
+        reader = _csv.DictReader(fh, delimiter="\t")
+        missing = {"sample", "fastq_1", "fastq_2"} - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(f"Samplesheet {path} is missing columns: {missing}")
+        for row in reader:
+            sid = row["sample"].strip()
+            samples[sid]["R1"].append(row["fastq_1"].strip())
+            samples[sid]["R2"].append(row["fastq_2"].strip())
+    result = {}
+    for sid, files in samples.items():
+        r1 = files["R1"][0] if len(files["R1"]) == 1 else files["R1"]
+        r2 = files["R2"][0] if len(files["R2"]) == 1 else files["R2"]
+        result[sid] = {"R1": r1, "R2": r2}
+    return result
+
+
+_samplesheet_path = config.get("samplesheet")
+if _samplesheet_path:
+    config["samples"] = _load_samplesheet(_samplesheet_path)
+
+if not config.get("samples"):
+    raise ValueError(
+        "No samples defined. Set 'samplesheet: <path>' in your config "
+        "or add a 'samples:' section directly."
+    )
+
 SAMPLES      = list(config["samples"].keys())
 OUTDIR       = config["outdir"]
 FILTER_PASS  = config.get("filter_pass", True)

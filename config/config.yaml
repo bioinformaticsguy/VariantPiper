@@ -3,14 +3,13 @@
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Samples
-# Each entry: sample_id -> {R1: path, R2: path}
-# Paths are relative to the working directory (project root).
+# Sample sheet
+# Point to a YAML file that maps sample IDs to their FASTQ paths.
+# Each entry: sample_id -> {R1: path_or_list, R2: path_or_list}
+# Multi-lane samples: provide R1/R2 as lists (sorted to match lanes).
+# See samplesheets/ for examples.
 # ---------------------------------------------------------------------------
-samples:
-  test:
-    R1: "test_data/test_R1.fastq.gz"
-    R2: "test_data/test_R2.fastq.gz"
+samplesheet: "samplesheets/test.tsv"
 
 # ---------------------------------------------------------------------------
 # Output directory
@@ -31,6 +30,14 @@ reference: "resources/reference/hg38.fa"
 # Set to false to skip filtering and keep all variants.
 # ---------------------------------------------------------------------------
 filter_pass: true
+
+# ---------------------------------------------------------------------------
+# Cleanup trimmed FASTQs
+# When true: fastp output (trimmed R1/R2) is deleted automatically by
+# Snakemake as soon as alignment completes. Saves ~30-50 GB per 30x sample.
+# Set to false to keep trimmed files (useful for debugging or re-running QC).
+# ---------------------------------------------------------------------------
+cleanup_trimmed: false
 
 # ---------------------------------------------------------------------------
 # Step 4 — SV calling
