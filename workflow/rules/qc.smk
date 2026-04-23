@@ -53,9 +53,15 @@ rule fastp:
         extra=config["fastp"].get("extra", ""),
     shell:
         """
+        # cat preserves the raw gzip bytes so fastp detects the magic bytes
+        # (0x1f 0x8b) and uses its normal gzip reader — keeping paired reads in
+        # sync.  zcat (decompressed plain-text pipe) triggers a different read
+        # path in fastp that breaks paired-read synchronisation across lanes.
+        # cat on a single file is a passthrough; on multiple files it produces
+        # a valid concatenated gzip stream that fastp and zlib handle correctly.
         fastp \
-            --in1 <(zcat {input.r1}) \
-            --in2 <(zcat {input.r2}) \
+            --in1 <(cat {input.r1}) \
+            --in2 <(cat {input.r2}) \
             --out1 {output.r1} \
             --out2 {output.r2} \
             --html {output.html} \

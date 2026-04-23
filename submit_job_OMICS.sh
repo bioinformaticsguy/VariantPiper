@@ -72,10 +72,18 @@ if [ -n "$SAMPLESHEET" ]; then
     CONFIG_ARGS+=(--config "samplesheet=${SAMPLESHEET}")
 fi
 
+# --- Ensure the snakemake metadata directory exists ---
+# Multiple jobs starting simultaneously race to create .snakemake/locks/;
+# pre-creating it avoids a FileNotFoundError in the loser jobs.
+mkdir -p .snakemake/locks
+
 # --- Unlock in case a previous job was killed or timed out ---
 snakemake --snakefile workflow/Snakefile --configfile "$CONFIGFILE" --unlock 2>/dev/null || true
 
 # --- Run ---
+# --nolock: safe because each sample writes to its own output/{sample}/ directory;
+# no two jobs share output paths, so Snakemake's file locking is not needed and
+# only causes conflicts when many jobs start at the same time.
 snakemake \
     --snakefile workflow/Snakefile \
     --configfile "$CONFIGFILE" \
@@ -83,7 +91,8 @@ snakemake \
     --use-conda \
     --conda-prefix /work/hassan/hassan/snakemake-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
-    --rerun-incomplete
+    --rerun-incomplete \
+    --nolock
 
 EXIT_CODE=$?
 
