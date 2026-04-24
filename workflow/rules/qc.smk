@@ -1,16 +1,22 @@
 # =============================================================================
 # Step 1 — Quality Control with fastp
 # =============================================================================
-# Trims adapters, filters low-quality bases/reads, and produces an HTML+JSON
-# QC report per sample.  Trimmed reads are passed to Step 2 (alignment).
+# Two rules:
 #
-# Multi-lane samples: R1/R2 in the config may be a string (single file) or a
-# list (multiple lanes/files). When a list is given, fastp reads all files
-# via process substitution (zcat concatenates them on the fly) — no temporary
-# concatenated file is written to disk.
+#   merge_lanes  — concatenates multi-lane FASTQ files into one R1 and one R2
+#                  per sample.  Uses cat, which simply concatenates gzip blocks;
+#                  the result is a valid multi-stream gzip file that any
+#                  gzip-aware reader handles correctly.  For single-lane samples
+#                  this is a byte-identical passthrough.  Outputs are marked
+#                  temp() and deleted automatically once fastp completes.
 #
-# cleanup_trimmed: when true in config, trimmed FASTQs are marked temp() and
-# deleted automatically by Snakemake as soon as alignment finishes.
+#   fastp        — adapter trimming and QC on the merged (single-file) input.
+#                  Receives a regular gzip file on disk — no process
+#                  substitution or pipe tricks, which caused fastp's gzip
+#                  reader to stop at the first stream boundary.
+#
+# cleanup_trimmed: when true in config, fastp trimmed outputs are also marked
+# temp() and deleted after alignment completes, saving ~30-50 GB per sample.
 # =============================================================================
 
 _CLEANUP_TRIMMED = config.get("cleanup_trimmed", False)
@@ -26,10 +32,36 @@ def _r2(wc):
     return v if isinstance(v, list) else [v]
 
 
-rule fastp:
+rule merge_lanes:
+    """
+    Concatenate all R1 (and R2) lane files into one gzip file per read end.
+    cat on gzip files produces a valid concatenated gzip stream; fastp and
+    zlib read it correctly as a regular file on disk.
+    """
     input:
         r1=_r1,
         r2=_r2,
+    output:
+        r1=temp("{outdir}/{sample}/qc/{sample}_R1.merged.fastq.gz"),
+        r2=temp("{outdir}/{sample}/qc/{sample}_R2.merged.fastq.gz"),
+    resources:
+        mem_mb=512,
+        runtime=120,
+    shell:
+        """
+        cat {input.r1} > {output.r1}
+        cat {input.r2} > {output.r2}
+        """
+
+
+rule fastp:
+    """
+    Trim adapters and low-quality bases with fastp.
+    Takes the merged single-file R1/R2 from merge_lanes as regular gzip files.
+    """
+    input:
+        r1="{outdir}/{sample}/qc/{sample}_R1.merged.fastq.gz",
+        r2="{outdir}/{sample}/qc/{sample}_R2.merged.fastq.gz",
     output:
         r1=(temp("{outdir}/{sample}/qc/{sample}_R1.trimmed.fastq.gz")
             if _CLEANUP_TRIMMED else
@@ -53,15 +85,9 @@ rule fastp:
         extra=config["fastp"].get("extra", ""),
     shell:
         """
-        # cat preserves the raw gzip bytes so fastp detects the magic bytes
-        # (0x1f 0x8b) and uses its normal gzip reader — keeping paired reads in
-        # sync.  zcat (decompressed plain-text pipe) triggers a different read
-        # path in fastp that breaks paired-read synchronisation across lanes.
-        # cat on a single file is a passthrough; on multiple files it produces
-        # a valid concatenated gzip stream that fastp and zlib handle correctly.
         fastp \
-            --in1 <(cat {input.r1}) \
-            --in2 <(cat {input.r2}) \
+            --in1 {input.r1} \
+            --in2 {input.r2} \
             --out1 {output.r1} \
             --out2 {output.r2} \
             --html {output.html} \
