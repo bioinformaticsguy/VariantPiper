@@ -29,8 +29,8 @@ SAMPLESHEET = "samplesheets/test_multilane.tsv"
 SAMPLE_ID = "test"
 
 INPUTS = {
-    "R1": "test_data/test_R1.fastq.gz",
-    "R2": "test_data/test_R2.fastq.gz",
+    "R1": "test_data/singlelane/test_R1.fastq.gz",
+    "R2": "test_data/singlelane/test_R2.fastq.gz",
 }
 
 
