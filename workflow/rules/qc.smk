@@ -4,16 +4,16 @@
 # Two rules:
 #
 #   merge_lanes  — concatenates multi-lane FASTQ files into one R1 and one R2
-#                  per sample.  Uses cat, which simply concatenates gzip blocks;
-#                  the result is a valid multi-stream gzip file that any
-#                  gzip-aware reader handles correctly.  For single-lane samples
-#                  this is a byte-identical passthrough.  Outputs are marked
-#                  temp() and deleted automatically once fastp completes.
+#                  per sample.  Uses zcat | gzip -1 (NOT plain cat) to produce
+#                  a standard single-stream gzip file.  fastp uses ISA-L for
+#                  gzip decompression; ISA-L does not handle multi-stream gzip
+#                  (produced by plain cat of .gz files) and hangs indefinitely
+#                  on the second sub-stream boundary.  Recompressing via
+#                  zcat | gzip -1 avoids this entirely.  Outputs are temp()
+#                  and deleted automatically once fastp completes.
 #
 #   fastp        — adapter trimming and QC on the merged (single-file) input.
-#                  Receives a regular gzip file on disk — no process
-#                  substitution or pipe tricks, which caused fastp's gzip
-#                  reader to stop at the first stream boundary.
+#                  Receives a regular single-stream gzip file on disk.
 #
 # cleanup_trimmed: when true in config, fastp trimmed outputs are also marked
 # temp() and deleted after alignment completes, saving ~30-50 GB per sample.
@@ -35,8 +35,13 @@ def _r2(wc):
 rule merge_lanes:
     """
     Concatenate all R1 (and R2) lane files into one gzip file per read end.
-    cat on gzip files produces a valid concatenated gzip stream; fastp and
-    zlib read it correctly as a regular file on disk.
+
+    Uses zcat | gzip -1 (not plain cat) so the output is a single gzip stream.
+    fastp uses ISA-L for gzip reading, which hangs indefinitely on multi-stream
+    gzip files (produced by plain cat of .gz files).  Recompressing via
+    zcat | gzip -1 produces a standard single-stream gzip that ISA-L reads
+    correctly.  -1 keeps compression fast; the file is temp() and deleted
+    after fastp completes.
     """
     input:
         r1=_r1,
@@ -46,11 +51,11 @@ rule merge_lanes:
         r2=temp("{outdir}/{sample}/qc/{sample}_R2.merged.fastq.gz"),
     resources:
         mem_mb=512,
-        runtime=120,
+        runtime=180,
     shell:
         """
-        cat {input.r1} > {output.r1}
-        cat {input.r2} > {output.r2}
+        zcat {input.r1} | gzip -1 > {output.r1}
+        zcat {input.r2} | gzip -1 > {output.r2}
         """
 
 
@@ -82,6 +87,10 @@ rule fastp:
     params:
         min_length=config["fastp"]["min_read_length"],
         quality=config["fastp"]["qualified_quality_phred"],
+        adapter_fasta=(
+            "--adapter_fasta " + config["fastp"]["adapter_fasta"]
+            if config["fastp"].get("adapter_fasta") else ""
+        ),
         extra=config["fastp"].get("extra", ""),
     shell:
         """
@@ -94,7 +103,9 @@ rule fastp:
             --json {output.json} \
             --length_required {params.min_length} \
             --qualified_quality_phred {params.quality} \
+            --detect_adapter_for_pe \
             --thread {threads} \
+            {params.adapter_fasta} \
             {params.extra} \
             2> {log}
         """
