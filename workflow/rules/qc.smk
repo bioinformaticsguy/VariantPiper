@@ -20,6 +20,7 @@
 # =============================================================================
 
 _CLEANUP_TRIMMED = config.get("cleanup_trimmed", False)
+_SAMPLEGENDER = config.get("samplegender", {})
 
 
 def _r1(wc):
@@ -47,8 +48,8 @@ rule merge_lanes:
         r1=_r1,
         r2=_r2,
     output:
-        r1=temp("{outdir}/{sample}/qc/{sample}_R1.merged.fastq.gz"),
-        r2=temp("{outdir}/{sample}/qc/{sample}_R2.merged.fastq.gz"),
+        r1=temp("{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged.fastq.gz"),
+        r2=temp("{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged.fastq.gz"),
     resources:
         mem_mb=512,
         runtime=180,
@@ -65,17 +66,17 @@ rule fastp:
     Takes the merged single-file R1/R2 from merge_lanes as regular gzip files.
     """
     input:
-        r1="{outdir}/{sample}/qc/{sample}_R1.merged.fastq.gz",
-        r2="{outdir}/{sample}/qc/{sample}_R2.merged.fastq.gz",
+        r1="{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged.fastq.gz",
+        r2="{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged.fastq.gz",
     output:
-        r1=(temp("{outdir}/{sample}/qc/{sample}_R1.trimmed.fastq.gz")
+        r1=(temp("{outdir}/{sample}/qc/fast_qc/{sample}_R1.trimmed.fastq.gz")
             if _CLEANUP_TRIMMED else
-            "{outdir}/{sample}/qc/{sample}_R1.trimmed.fastq.gz"),
-        r2=(temp("{outdir}/{sample}/qc/{sample}_R2.trimmed.fastq.gz")
+            "{outdir}/{sample}/qc/fast_qc/{sample}_R1.trimmed.fastq.gz"),
+        r2=(temp("{outdir}/{sample}/qc/fast_qc/{sample}_R2.trimmed.fastq.gz")
             if _CLEANUP_TRIMMED else
-            "{outdir}/{sample}/qc/{sample}_R2.trimmed.fastq.gz"),
-        html="{outdir}/{sample}/qc/{sample}_fastp.html",
-        json="{outdir}/{sample}/qc/{sample}_fastp.json",
+            "{outdir}/{sample}/qc/fast_qc/{sample}_R2.trimmed.fastq.gz"),
+        html="{outdir}/{sample}/qc/fast_qc/{sample}_fastp.html",
+        json="{outdir}/{sample}/qc/fast_qc/{sample}_fastp.json",
     log:
         "{outdir}/{sample}/logs/fastp.log",
     threads: 4
@@ -107,5 +108,70 @@ rule fastp:
             --thread {threads} \
             {params.adapter_fasta} \
             {params.extra} \
+            2> {log}
+        """
+
+
+rule ngsbits_samplegender:
+    """
+    Predict sample sex from the duplicate-marked BAM with ngs-bits SampleGender.
+
+    The output filename matches MultiQC's ngs-bits SampleGender search pattern:
+    *_ngsbits_sex.tsv.
+    """
+    input:
+        bam="{outdir}/{sample}/alignment/{sample}.markdup.bam",
+        bai="{outdir}/{sample}/alignment/{sample}.markdup.bam.bai",
+    output:
+        tsv="{outdir}/{sample}/ngsbits_samplegender/{sample}_ngsbits_sex.tsv",
+    log:
+        "{outdir}/{sample}/logs/ngsbits_samplegender.log",
+    resources:
+        mem_mb=4000,
+        runtime=60,
+    conda:
+        "../envs/ngs-bits.yaml"
+    params:
+        method=_SAMPLEGENDER.get("method", "xy"),
+        extra=_SAMPLEGENDER.get("extra", ""),
+    shell:
+        """
+        SampleGender \
+            -in {input.bam} \
+            -method {params.method} \
+            -out {output.tsv} \
+            {params.extra} \
+            2> {log}
+        """
+
+
+rule multiqc:
+    """
+    Aggregate per-sample QC outputs with MultiQC.
+    """
+    input:
+        fastp_html="{outdir}/{sample}/qc/fast_qc/{sample}_fastp.html",
+        fastp_json="{outdir}/{sample}/qc/fast_qc/{sample}_fastp.json",
+        samplegender="{outdir}/{sample}/ngsbits_samplegender/{sample}_ngsbits_sex.tsv",
+    output:
+        html="{outdir}/{sample}/qc/{sample}_multiqc_report.html",
+        data_dir=directory("{outdir}/{sample}/qc/multiqc_data"),
+    log:
+        "{outdir}/{sample}/logs/multiqc.log",
+    resources:
+        mem_mb=4000,
+        runtime=60,
+    conda:
+        "../envs/multiqc.yaml"
+    params:
+        qc_dir="{outdir}/{sample}/qc",
+        samplegender_dir="{outdir}/{sample}/ngsbits_samplegender",
+        report_name="{sample}_multiqc_report.html",
+    shell:
+        """
+        multiqc {params.qc_dir} {params.samplegender_dir} \
+            --outdir {params.qc_dir} \
+            --filename {params.report_name} \
+            --force \
             2> {log}
         """

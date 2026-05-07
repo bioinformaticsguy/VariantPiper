@@ -78,7 +78,17 @@ rule all:
     input:
         # Step 1: QC reports
         expand(
-            "{outdir}/{sample}/qc/{sample}_fastp.html",
+            "{outdir}/{sample}/qc/fast_qc/{sample}_fastp.html",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/ngsbits_samplegender/{sample}_ngsbits_sex.tsv",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/qc/{sample}_multiqc_report.html",
             outdir=OUTDIR,
             sample=SAMPLES,
         ),

@@ -146,12 +146,19 @@ output/
     │   ├── bwa_mem2_align.log
     │   ├── picard_markduplicates.log
     │   ├── samtools_index.log
+    │   ├── ngsbits_samplegender.log
+    │   ├── multiqc.log
     │   └── deepvariant.log
     ├── qc/
-    │   ├── {sample}_R1.trimmed.fastq.gz
-    │   ├── {sample}_R2.trimmed.fastq.gz
-    │   ├── {sample}_fastp.html
-    │   └── {sample}_fastp.json
+    │   ├── {sample}_multiqc_report.html
+    │   ├── multiqc_data/
+    │   ├── fast_qc/
+    │   │   ├── {sample}_R1.trimmed.fastq.gz
+    │   │   ├── {sample}_R2.trimmed.fastq.gz
+    │   │   ├── {sample}_fastp.html
+    │   │   └── {sample}_fastp.json
+    ├── ngsbits_samplegender/
+    │   └── {sample}_ngsbits_sex.tsv
     ├── alignment/
     │   ├── {sample}.markdup.bam        ← duplicate-marked, sorted BAM
     │   ├── {sample}.markdup.bam.bai    ← BAM index

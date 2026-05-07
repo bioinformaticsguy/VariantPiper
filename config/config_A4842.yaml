@@ -61,3 +61,7 @@ fastp:
   min_read_length: 50
   qualified_quality_phred: 20
   extra: ""
+
+samplegender:
+  method: "xy"
+  extra: ""

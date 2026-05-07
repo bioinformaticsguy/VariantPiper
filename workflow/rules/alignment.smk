@@ -27,8 +27,8 @@ rule bwa_mem2_align:
     deterministic output regardless of the number of threads used.
     """
     input:
-        r1="{outdir}/{sample}/qc/{sample}_R1.trimmed.fastq.gz",
-        r2="{outdir}/{sample}/qc/{sample}_R2.trimmed.fastq.gz",
+        r1="{outdir}/{sample}/qc/fast_qc/{sample}_R1.trimmed.fastq.gz",
+        r2="{outdir}/{sample}/qc/fast_qc/{sample}_R2.trimmed.fastq.gz",
         ref=config["reference"],
         idx=multiext(
             config["reference"],

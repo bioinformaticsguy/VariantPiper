@@ -79,3 +79,7 @@ fastp:
   min_read_length: 50         # discard reads shorter than this after trimming
   qualified_quality_phred: 20 # minimum base quality
   extra: ""                   # any additional fastp flags
+
+samplegender:
+  method: "xy"                # SampleGender method: xy, hetx, or sry
+  extra: ""                   # any additional SampleGender flags
