@@ -31,7 +31,3 @@ CLAUDE.md
 /samplesheets/*
 # but check in test samplesheets (no sensitive data)
 !/samplesheets/test*.tsv
-
-# generated multilane test data (derived from test_data/test_R*.fastq.gz — regenerate with
-# python scripts/generate_test_multilane.py)
-test_data/multilane/
