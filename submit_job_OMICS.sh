@@ -91,6 +91,7 @@ snakemake \
     --use-conda \
     --conda-prefix /work/hassan/hassan/snakemake-conda \
     --cores "${SLURM_CPUS_PER_TASK}" \
+    --latency-wait 60 \
     --rerun-incomplete \
     --nolock
 

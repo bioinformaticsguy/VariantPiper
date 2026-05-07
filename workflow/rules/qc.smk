@@ -167,11 +167,13 @@ rule multiqc:
         qc_dir="{outdir}/{sample}/qc",
         samplegender_dir="{outdir}/{sample}/ngsbits_samplegender",
         report_name="{sample}_multiqc_report.html",
+        data_dir_name="multiqc_data",
     shell:
         """
         multiqc {params.qc_dir} {params.samplegender_dir} \
             --outdir {params.qc_dir} \
             --filename {params.report_name} \
+            --cl-config "data_dir_name: {params.data_dir_name}" \
             --force \
             2> {log}
         """
