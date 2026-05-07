@@ -34,4 +34,4 @@ CLAUDE.md
 
 # generated multilane test data (derived from test_data/test_R*.fastq.gz — regenerate with
 # python scripts/generate_test_multilane.py)
-/test_data/multilane/
+/test_data/multilane/*
