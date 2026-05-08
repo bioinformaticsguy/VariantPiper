@@ -6,7 +6,7 @@ A Snakemake pipeline for germline variant calling from paired-end Illumina WGS d
 
 | Step | Tool | Status |
 |------|------|--------|
-| 1. Quality control | fastp | ready |
+| 1. Quality control | fastp, FastQC | ready |
 | 2. Alignment | BWA-MEM2 | in progress |
 | 3. SNV/indel calling | DeepVariant | ready |
 | 4. SV calling | Delly | ready |
@@ -155,6 +155,10 @@ output/
     │   ├── fast_qc/
     │   │   ├── {sample}_R1.trimmed.fastq.gz
     │   │   ├── {sample}_R2.trimmed.fastq.gz
+    │   │   ├── {sample}_R1.merged_fastqc.html
+    │   │   ├── {sample}_R1.merged_fastqc.zip
+    │   │   ├── {sample}_R2.merged_fastqc.html
+    │   │   ├── {sample}_R2.merged_fastqc.zip
     │   │   ├── {sample}_fastp.html
     │   │   └── {sample}_fastp.json
     ├── ngsbits_samplegender/

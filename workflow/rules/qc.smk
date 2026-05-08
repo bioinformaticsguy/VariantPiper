@@ -1,7 +1,7 @@
 # =============================================================================
-# Step 1 — Quality Control with fastp
+# Step 1 — Quality Control with fastp and FastQC
 # =============================================================================
-# Two rules:
+# Three rules:
 #
 #   merge_lanes  — concatenates multi-lane FASTQ files into one R1 and one R2
 #                  per sample.  Uses zcat | gzip -1 (NOT plain cat) to produce
@@ -11,6 +11,8 @@
 #                  on the second sub-stream boundary.  Recompressing via
 #                  zcat | gzip -1 avoids this entirely.  Outputs are temp()
 #                  and deleted automatically once fastp completes.
+#
+#   fastqc       — read-level QC on the merged (single-file) input.
 #
 #   fastp        — adapter trimming and QC on the merged (single-file) input.
 #                  Receives a regular single-stream gzip file on disk.
@@ -112,6 +114,38 @@ rule fastp:
         """
 
 
+rule fastqc:
+    """
+    Run FastQC on the merged input FASTQs.
+    """
+    input:
+        r1="{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged.fastq.gz",
+        r2="{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged.fastq.gz",
+    output:
+        r1_html="{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged_fastqc.html",
+        r1_zip="{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged_fastqc.zip",
+        r2_html="{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged_fastqc.html",
+        r2_zip="{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged_fastqc.zip",
+    log:
+        "{outdir}/{sample}/logs/fastqc.log",
+    threads: 2
+    resources:
+        mem_mb=4000,
+        runtime=60,
+    conda:
+        "../envs/fastqc.yaml"
+    params:
+        outdir="{outdir}/{sample}/qc/fast_qc",
+    shell:
+        """
+        fastqc \
+            --threads {threads} \
+            --outdir {params.outdir} \
+            {input.r1} {input.r2} \
+            > {log} 2>&1
+        """
+
+
 rule ngsbits_samplegender:
     """
     Predict sample sex from the duplicate-marked BAM with ngs-bits SampleGender.
@@ -152,6 +186,8 @@ rule multiqc:
     input:
         fastp_html="{outdir}/{sample}/qc/fast_qc/{sample}_fastp.html",
         fastp_json="{outdir}/{sample}/qc/fast_qc/{sample}_fastp.json",
+        fastqc_r1_zip="{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged_fastqc.zip",
+        fastqc_r2_zip="{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged_fastqc.zip",
         samplegender="{outdir}/{sample}/ngsbits_samplegender/{sample}_ngsbits_sex.tsv",
     output:
         html="{outdir}/{sample}/qc/{sample}_multiqc_report.html",

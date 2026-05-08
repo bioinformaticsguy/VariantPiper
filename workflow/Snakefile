@@ -83,6 +83,16 @@ rule all:
             sample=SAMPLES,
         ),
         expand(
+            "{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged_fastqc.html",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
+            "{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged_fastqc.html",
+            outdir=OUTDIR,
+            sample=SAMPLES,
+        ),
+        expand(
             "{outdir}/{sample}/ngsbits_samplegender/{sample}_ngsbits_sex.tsv",
             outdir=OUTDIR,
             sample=SAMPLES,
