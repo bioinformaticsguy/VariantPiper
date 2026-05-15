@@ -1,57 +1,15 @@
 # =============================================================================
-# Step 4 — Structural Variant Calling
+# Step 4 — Structural Variant Calling with Manta
 # =============================================================================
-# Supports two SV callers, selected via config["sv_caller"]:
-#   - manta  (default) — Illumina Manta v1.6.0
-#   - delly            — EMBL-EBI Delly
+# VariantPiper Phase I currently exposes Manta as the SV caller.
 #
-# Caller-specific rules write to intermediate paths:
-#   sv_calls/{sample}.manta.sv.vcf.gz
-#   sv_calls/{sample}.delly.sv.vcf.gz
+# Final Phase I SV deliverable for downstream VIPER:
+#   sv_calls/{sample}.manta.vcf.gz
+#   sv_calls/{sample}.manta.vcf.gz.tbi
 #
-# The dispatcher rule (sv_collect) copies the active caller's output to the
-# canonical path consumed by rule all and downstream steps:
-#   sv_calls/{sample}.sv.vcf.gz  +  .tbi
-#
-# To switch callers, change sv_caller in your config file — no Snakefile
-# edits needed.
+# No generic {sample}.sv.vcf.gz is created in Phase I because there is not yet
+# a true merged/standardized SV file from multiple SV callers.
 # =============================================================================
-
-SV_CALLER = config.get("sv_caller", "manta")
-
-
-# -----------------------------------------------------------------------------
-# Dispatcher — copies the active caller's VCF to the canonical output path
-# -----------------------------------------------------------------------------
-
-def _sv_vcf(wc):
-    return f"{wc.outdir}/{wc.sample}/sv_calls/{wc.sample}.{SV_CALLER}.sv.vcf.gz"
-
-def _sv_tbi(wc):
-    return f"{wc.outdir}/{wc.sample}/sv_calls/{wc.sample}.{SV_CALLER}.sv.vcf.gz.tbi"
-
-
-rule sv_collect:
-    """
-    Dispatcher: copies the active SV caller's output to the canonical path.
-    Change sv_caller in config to switch between manta and delly.
-    """
-    input:
-        vcf=_sv_vcf,
-        tbi=_sv_tbi,
-    output:
-        vcf="{outdir}/{sample}/sv_calls/{sample}.sv.vcf.gz",
-        tbi="{outdir}/{sample}/sv_calls/{sample}.sv.vcf.gz.tbi",
-    log:
-        "{outdir}/{sample}/logs/sv_collect.log",
-    resources:
-        mem_mb=1000,
-        runtime=10,
-    shell:
-        """
-        cp {input.vcf} {output.vcf} 2> {log}
-        cp {input.tbi} {output.tbi} 2>> {log}
-        """
 
 
 # =============================================================================
@@ -77,8 +35,8 @@ rule manta_call:
         ref=config["reference"],
         fai=config["reference"] + ".fai",
     output:
-        vcf="{outdir}/{sample}/sv_calls/{sample}.manta.sv.vcf.gz",
-        tbi="{outdir}/{sample}/sv_calls/{sample}.manta.sv.vcf.gz.tbi",
+        vcf="{outdir}/{sample}/sv_calls/{sample}.manta.vcf.gz",
+        tbi="{outdir}/{sample}/sv_calls/{sample}.manta.vcf.gz.tbi",
     log:
         "{outdir}/{sample}/logs/manta.log",
     threads: 16
@@ -122,80 +80,4 @@ rule manta_call:
 
         # Remove the Manta run directory (large intermediate graph files)
         rm -rf {params.rundir}
-        """
-
-
-# =============================================================================
-# Delly rules
-# =============================================================================
-
-
-rule delly_call:
-    """
-    Discover structural variants from the duplicate-marked BAM.
-    Produces a raw BCF with all SV types (DEL, INS, DUP, INV, BND).
-    """
-    input:
-        bam="{outdir}/{sample}/alignment/{sample}.markdup.bam",
-        bai="{outdir}/{sample}/alignment/{sample}.markdup.bam.bai",
-        ref=config["reference"],
-        fai=config["reference"] + ".fai",
-    output:
-        bcf=temp("{outdir}/{sample}/sv_calls/{sample}.sv.bcf"),
-        csi=temp("{outdir}/{sample}/sv_calls/{sample}.sv.bcf.csi"),
-    log:
-        "{outdir}/{sample}/logs/delly_call.log",
-    resources:
-        mem_mb=16000,
-        runtime=480,
-    conda:
-        "../envs/delly.yaml"
-    params:
-        extra=config.get("delly", {}).get("extra", ""),
-    shell:
-        """
-        delly call \
-            -g {input.ref} \
-            {params.extra} \
-            -o {output.bcf} \
-            {input.bam} \
-            2> {log}
-        # delly >= 1.2 creates the .csi index automatically alongside the BCF
-        """
-
-
-rule delly_filter:
-    """
-    Export the raw Delly BCF as VCF.gz + TBI.
-
-    Note: delly filter -f germline is designed for population cohorts (>=20 samples)
-    and removes essentially all calls in single-sample analysis. We rely instead on
-    Delly's built-in per-variant PASS/LowQual filter applied during delly call,
-    and optionally subset to PASS here via bcftools.
-    """
-    input:
-        bcf="{outdir}/{sample}/sv_calls/{sample}.sv.bcf",
-        csi="{outdir}/{sample}/sv_calls/{sample}.sv.bcf.csi",
-    output:
-        vcf="{outdir}/{sample}/sv_calls/{sample}.delly.sv.vcf.gz",
-        tbi="{outdir}/{sample}/sv_calls/{sample}.delly.sv.vcf.gz.tbi",
-    log:
-        "{outdir}/{sample}/logs/delly_filter.log",
-    resources:
-        mem_mb=8000,
-        runtime=60,
-    params:
-        filter="-f PASS" if config.get("filter_pass", True) else "",
-    conda:
-        "../envs/delly.yaml"
-    shell:
-        """
-        bcftools view \
-            {params.filter} \
-            -O z \
-            -o {output.vcf} \
-            {input.bcf} \
-            2> {log}
-
-        bcftools index -t {output.vcf} 2>> {log}
         """

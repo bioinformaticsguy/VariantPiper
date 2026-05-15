@@ -9,12 +9,14 @@
 #   2. call_snv_calls      — neural network inference
 #   3. postprocess_snv_calls — converts output to VCF + gVCF
 #
-# Outputs (all produced and indexed by DeepVariant itself):
-#   {sample}.vcf.gz / .vcf.gz.tbi       — full SNV + indel calls (all variants)
-#   {sample}.g.vcf.gz / .g.vcf.gz.tbi   — gVCF for future cohort genotyping
+# Phase I final outputs:
+#   {sample}.pass.vcf.gz / .pass.vcf.gz.tbi — VIPER handoff SNV/indel calls
+#   {sample}.g.vcf.gz / .g.vcf.gz.tbi       — kept for Phase II cohort calling
 #
-# When filter_pass: true in config, filter_snv additionally produces:
-#   {sample}.pass.vcf.gz / .pass.vcf.gz.tbi — PASS variants only
+# Optional/debug output:
+#   {sample}.vcf.gz / .vcf.gz.tbi — full DeepVariant VCF. Kept only when
+#   keep_full_deepvariant_vcf: true; otherwise marked temp() because the main
+#   Phase I deliverable is the PASS VCF and the gVCF is always retained.
 #
 # Prerequisites:
 #   - Singularity must be in PATH (load before submitting via the submit script)
@@ -33,8 +35,12 @@ rule deepvariant:
         ref=config["reference"],
         fai=config["reference"] + ".fai",
     output:
-        vcf="{outdir}/{sample}/snv_calls/{sample}.vcf.gz",
-        vcf_tbi="{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi",
+        vcf=("{outdir}/{sample}/snv_calls/{sample}.vcf.gz"
+             if KEEP_FULL_DEEPVARIANT_VCF else
+             temp("{outdir}/{sample}/snv_calls/{sample}.vcf.gz")),
+        vcf_tbi=("{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi"
+                 if KEEP_FULL_DEEPVARIANT_VCF else
+                 temp("{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi")),
         gvcf="{outdir}/{sample}/snv_calls/{sample}.g.vcf.gz",
         gvcf_tbi="{outdir}/{sample}/snv_calls/{sample}.g.vcf.gz.tbi",
     log:
@@ -81,8 +87,7 @@ rule deepvariant:
 rule filter_snv:
     """
     Filter DeepVariant VCF to PASS variants only.
-    Produces {sample}.pass.vcf.gz alongside the full {sample}.vcf.gz.
-    Only added to rule all targets when filter_pass: true in config.
+    Produces the main Phase I SNV/indel deliverable for downstream VIPER.
     The gVCF is never filtered — it must retain all sites for cohort genotyping.
     """
     input:

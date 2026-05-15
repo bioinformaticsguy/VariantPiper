@@ -29,7 +29,7 @@ from collections import defaultdict as _defaultdict
 
 
 def _load_samplesheet(path):
-    samples = _defaultdict(lambda: {"R1": [], "R2": []})
+    samples = _defaultdict(lambda: {"R1": [], "R2": [], "metadata": {}})
     with open(path) as fh:
         reader = _csv.DictReader(fh, delimiter="\t")
         missing = {"sample", "fastq_1", "fastq_2"} - set(reader.fieldnames or [])
@@ -39,11 +39,14 @@ def _load_samplesheet(path):
             sid = row["sample"].strip()
             samples[sid]["R1"].append(row["fastq_1"].strip())
             samples[sid]["R2"].append(row["fastq_2"].strip())
+            for key, value in row.items():
+                if key not in {"sample", "lane", "fastq_1", "fastq_2"}:
+                    samples[sid]["metadata"][key] = (value or "").strip()
     result = {}
     for sid, files in samples.items():
         r1 = files["R1"][0] if len(files["R1"]) == 1 else files["R1"]
         r2 = files["R2"][0] if len(files["R2"]) == 1 else files["R2"]
-        result[sid] = {"R1": r1, "R2": r2}
+        result[sid] = {"R1": r1, "R2": r2, **files["metadata"]}
     return result
 
 
@@ -60,6 +63,9 @@ if not config.get("samples"):
 SAMPLES      = list(config["samples"].keys())
 OUTDIR       = config["outdir"]
 FILTER_PASS  = config.get("filter_pass", True)
+KEEP_FULL_DEEPVARIANT_VCF = config.get("keep_full_deepvariant_vcf", False)
+KEEP_PER_BASE_COVERAGE = config.get("keep_per_base_coverage", False)
+COVERAGE_REGIONS_BED = config.get("coverage_regions_bed")
 
 # -----------------------------------------------------------------------------
 # Rule modules (one per pipeline step)
@@ -67,63 +73,57 @@ FILTER_PASS  = config.get("filter_pass", True)
 include: "rules/reference.smk"
 include: "rules/qc.smk"
 include: "rules/alignment.smk"
+include: "rules/coverage.smk"
 include: "rules/variant_calling.smk"
 include: "rules/sv_calling.smk"
+include: "rules/metadata.smk"
 
 
 # -----------------------------------------------------------------------------
-# Target rule — final outputs of the complete pipeline
+# Target rule — final VariantPiper Phase I deliverables
 # -----------------------------------------------------------------------------
+# Phase I stops after preprocessing/QC, alignment, duplicate marking, sex
+# inference, mosdepth coverage QC, MultiQC, DeepVariant SNV/indel calling, Manta
+# SV calling, and final manifest/checksum collection.
+#
+# Required later by downstream VIPER:
+#   markdup BAM/BAI, PASS SNV VCF/TBI, Manta VCF/TBI, mosdepth summary,
+#   SampleGender TSV, MultiQC report/data, and metadata manifests.
+#
+# Required later by Phase II cohort analysis:
+#   markdup BAM/BAI and DeepVariant gVCF/TBI.
+#
+# Optional/debug outputs:
+#   full DeepVariant VCF/TBI is kept only when keep_full_deepvariant_vcf: true;
+#   per-base mosdepth BED is kept only when keep_per_base_coverage: true.
 rule all:
     input:
-        # Step 1: QC reports
-        expand(
-            "{outdir}/{sample}/qc/fast_qc/{sample}_fastp.html",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
-        expand(
-            "{outdir}/{sample}/qc/fast_qc/{sample}_R1.merged_fastqc.html",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
-        expand(
-            "{outdir}/{sample}/qc/fast_qc/{sample}_R2.merged_fastqc.html",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
+        # Alignment and duplicate metrics
+        expand("{outdir}/{sample}/alignment/{sample}.markdup.bam", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/alignment/{sample}.markdup.bam.bai", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/alignment/{sample}.markdup_metrics.txt", outdir=OUTDIR, sample=SAMPLES),
+        # Sex inference
         expand(
             "{outdir}/{sample}/ngsbits_samplegender/{sample}_ngsbits_sex.tsv",
             outdir=OUTDIR,
             sample=SAMPLES,
         ),
+        # Coverage QC
+        expand("{outdir}/{sample}/qc/coverage/{sample}.mosdepth.summary.txt", outdir=OUTDIR, sample=SAMPLES),
+        *(expand("{outdir}/{sample}/qc/coverage/{sample}.regions.bed.gz", outdir=OUTDIR, sample=SAMPLES) if COVERAGE_REGIONS_BED else []),
+        *(expand("{outdir}/{sample}/qc/coverage/{sample}.regions.bed.gz.csi", outdir=OUTDIR, sample=SAMPLES) if COVERAGE_REGIONS_BED else []),
+        *(expand("{outdir}/{sample}/qc/coverage/{sample}.per-base.bed.gz", outdir=OUTDIR, sample=SAMPLES) if KEEP_PER_BASE_COVERAGE else []),
+        # MultiQC deliverables
         expand(
             "{outdir}/{sample}/qc/{sample}_multiqc_report.html",
             outdir=OUTDIR,
             sample=SAMPLES,
         ),
-        # Step 2: duplicate-marked BAM + index
-        expand(
-            "{outdir}/{sample}/alignment/{sample}.markdup.bam",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
-        expand(
-            "{outdir}/{sample}/alignment/{sample}.markdup.bam.bai",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
-        # Step 3: SNV/indel calls (DeepVariant) — full VCF + gVCF + indexes
-        expand(
-            "{outdir}/{sample}/snv_calls/{sample}.vcf.gz",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
-        expand(
-            "{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
+        expand("{outdir}/{sample}/qc/multiqc_data/multiqc_general_stats.txt", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/qc/multiqc_data/multiqc_software_versions.txt", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/qc/multiqc_data/multiqc_data.json", outdir=OUTDIR, sample=SAMPLES),
+        # SNV/indel deliverables. PASS VCF is the VIPER handoff; gVCF is kept
+        # for future Phase II cohort genotyping.
         expand(
             "{outdir}/{sample}/snv_calls/{sample}.g.vcf.gz",
             outdir=OUTDIR,
@@ -134,25 +134,25 @@ rule all:
             outdir=OUTDIR,
             sample=SAMPLES,
         ),
-        # Step 3: PASS-filtered SNV VCF (only when filter_pass: true)
-        *(expand(
+        expand(
             "{outdir}/{sample}/snv_calls/{sample}.pass.vcf.gz",
             outdir=OUTDIR,
             sample=SAMPLES,
-        ) if FILTER_PASS else []),
-        *(expand(
+        ),
+        expand(
             "{outdir}/{sample}/snv_calls/{sample}.pass.vcf.gz.tbi",
             outdir=OUTDIR,
             sample=SAMPLES,
-        ) if FILTER_PASS else []),
-        # Step 4: SV calls (Manta or Delly, see sv_caller in config) — VCF + index
-        expand(
-            "{outdir}/{sample}/sv_calls/{sample}.sv.vcf.gz",
-            outdir=OUTDIR,
-            sample=SAMPLES,
         ),
-        expand(
-            "{outdir}/{sample}/sv_calls/{sample}.sv.vcf.gz.tbi",
-            outdir=OUTDIR,
-            sample=SAMPLES,
-        ),
+        *(expand("{outdir}/{sample}/snv_calls/{sample}.vcf.gz", outdir=OUTDIR, sample=SAMPLES) if KEEP_FULL_DEEPVARIANT_VCF else []),
+        *(expand("{outdir}/{sample}/snv_calls/{sample}.vcf.gz.tbi", outdir=OUTDIR, sample=SAMPLES) if KEEP_FULL_DEEPVARIANT_VCF else []),
+        # SV deliverable. Manta is the only Phase I SV caller, so no duplicate
+        # generic {sample}.sv.vcf.gz is produced.
+        expand("{outdir}/{sample}/sv_calls/{sample}.manta.vcf.gz", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/sv_calls/{sample}.manta.vcf.gz.tbi", outdir=OUTDIR, sample=SAMPLES),
+        # Phase I metadata, VIPER handoff manifest, Phase II-ready input
+        # manifest, and checksums for important final files.
+        expand("{outdir}/{sample}/metadata/{sample}.variantpiper_phase1.yaml", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/metadata/{sample}.phase1_outputs.tsv", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/metadata/{sample}.cohort_inputs.tsv", outdir=OUTDIR, sample=SAMPLES),
+        expand("{outdir}/{sample}/metadata/{sample}.checksums.txt", outdir=OUTDIR, sample=SAMPLES),

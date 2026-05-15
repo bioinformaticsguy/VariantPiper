@@ -25,11 +25,14 @@ reference: "resources/reference/hg38.fa"
 # ---------------------------------------------------------------------------
 # Output filtering
 # When true: keep only PASS variants in the final SNV and SV VCFs.
-# SNVs: produces {sample}.pass.vcf.gz alongside the full DeepVariant VCF.
-# SVs:  the single {sample}.sv.vcf.gz contains only PASS-filtered calls.
-# Set to false to skip filtering and keep all variants.
+# SNVs: produces the Phase I main deliverable {sample}.pass.vcf.gz.
+# SVs:  the Manta deliverable {sample}.manta.vcf.gz contains only PASS calls.
 # ---------------------------------------------------------------------------
 filter_pass: true
+
+# Keep the full unfiltered DeepVariant VCF as a debug deliverable under
+# snv_calls/. The gVCF and PASS VCF are always retained.
+keep_full_deepvariant_vcf: false
 
 # ---------------------------------------------------------------------------
 # Cleanup trimmed FASTQs
@@ -40,21 +43,29 @@ filter_pass: true
 cleanup_trimmed: false
 
 # ---------------------------------------------------------------------------
+# Coverage QC with mosdepth
+# ---------------------------------------------------------------------------
+# The mosdepth summary is always retained. Per-base coverage can be very large,
+# so it is disabled by default. Provide a BED file to also create
+# {sample}.regions.bed.gz for downstream VIPER/DSD coverage summaries.
+# ---------------------------------------------------------------------------
+keep_per_base_coverage: false
+coverage_regions_bed: null
+
+mosdepth:
+  extra: ""
+
+# ---------------------------------------------------------------------------
 # Step 4 — SV calling
-# sv_caller selects which tool is used. Both rule sets are always compiled;
-# only the active caller's rules are executed.
-#   manta  — Illumina Manta v1.6.0 (default, recommended for WGS)
-#   delly  — EMBL-EBI Delly
+# VariantPiper Phase I uses Manta and writes {sample}.manta.vcf.gz directly.
+# No generic {sample}.sv.vcf.gz is created unless a future true merged SV file
+# is added.
 # ---------------------------------------------------------------------------
 sv_caller: manta
 
 # Manta settings
 manta:
   extra: ""   # additional configManta.py flags (e.g. --callRegions bed.gz for targeted)
-
-# Delly settings (used when sv_caller: delly)
-delly:
-  extra: "-x resources/delly/human.hg38.excl.tsv"   # exclusion list downloaded by install.sh
 
 # ---------------------------------------------------------------------------
 # Step 3 — Variant calling (DeepVariant)

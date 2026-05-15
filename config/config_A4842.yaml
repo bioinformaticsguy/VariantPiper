@@ -30,13 +30,10 @@ cleanup_trimmed: true
 # ---------------------------------------------------------------------------
 # Step 4 — SV calling
 # ---------------------------------------------------------------------------
-sv_caller: manta   # manta (default) or delly
+sv_caller: manta
 
 manta:
   extra: ""
-
-delly:
-  extra: "-x resources/delly/human.hg38.excl.tsv"
 
 # ---------------------------------------------------------------------------
 # Step 3 — Variant calling (DeepVariant)

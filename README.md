@@ -6,11 +6,11 @@ A Snakemake pipeline for germline variant calling from paired-end Illumina WGS d
 
 | Step | Tool | Status |
 |------|------|--------|
-| 1. Quality control | fastp, FastQC | ready |
-| 2. Alignment | BWA-MEM2 | in progress |
+| 1. Quality control | fastp, FastQC, mosdepth, MultiQC | ready |
+| 2. Alignment | BWA-MEM2, Picard, samtools | ready |
 | 3. SNV/indel calling | DeepVariant | ready |
-| 4. SV calling | Delly | ready |
-| 5. Cohort joint-genotyping | GATK | planned |
+| 4. SV calling | Manta | ready |
+| 5. Phase I metadata/manifests | built-in rules | ready |
 
 ---
 
@@ -147,18 +147,25 @@ output/
     │   ├── picard_markduplicates.log
     │   ├── samtools_index.log
     │   ├── ngsbits_samplegender.log
+    │   ├── mosdepth.log
     │   ├── multiqc.log
-    │   └── deepvariant.log
+    │   ├── deepvariant.log
+    │   └── manta.log
     ├── qc/
     │   ├── {sample}_multiqc_report.html
     │   ├── multiqc_data/
+    │   │   ├── multiqc_general_stats.txt
+    │   │   ├── multiqc_software_versions.txt
+    │   │   └── multiqc_data.json
+    │   ├── coverage/
+    │   │   ├── {sample}.mosdepth.summary.txt
+    │   │   ├── {sample}.regions.bed.gz       ← when coverage_regions_bed is set
+    │   │   └── {sample}.regions.bed.gz.csi
     │   ├── fast_qc/
-    │   │   ├── {sample}_R1.trimmed.fastq.gz
+    │   │   ├── {sample}_R1.trimmed.fastq.gz  ← optional/intermediate
     │   │   ├── {sample}_R2.trimmed.fastq.gz
     │   │   ├── {sample}_R1.merged_fastqc.html
-    │   │   ├── {sample}_R1.merged_fastqc.zip
     │   │   ├── {sample}_R2.merged_fastqc.html
-    │   │   ├── {sample}_R2.merged_fastqc.zip
     │   │   ├── {sample}_fastp.html
     │   │   └── {sample}_fastp.json
     ├── ngsbits_samplegender/
@@ -168,17 +175,25 @@ output/
     │   ├── {sample}.markdup.bam.bai    ← BAM index
     │   └── {sample}.markdup_metrics.txt
     ├── snv_calls/
-    │   ├── {sample}.vcf.gz             ← SNV + indel calls (DeepVariant)
-    │   ├── {sample}.vcf.gz.tbi
+    │   ├── {sample}.pass.vcf.gz        ← VIPER SNV/indel handoff
+    │   ├── {sample}.pass.vcf.gz.tbi
     │   ├── {sample}.g.vcf.gz           ← gVCF (for cohort genotyping)
     │   └── {sample}.g.vcf.gz.tbi
-    └── sv_calls/
-        ├── {sample}.sv.vcf.gz          ← structural variant calls (Delly)
-        └── {sample}.sv.vcf.gz.tbi
+    ├── sv_calls/
+    │   ├── {sample}.manta.vcf.gz       ← VIPER SV handoff
+    │   └── {sample}.manta.vcf.gz.tbi
+    └── metadata/
+        ├── {sample}.variantpiper_phase1.yaml
+        ├── {sample}.phase1_outputs.tsv
+        ├── {sample}.cohort_inputs.tsv
+        └── {sample}.checksums.txt
 ```
 
 > The intermediate sorted BAM (`{sample}.sorted.bam`) is automatically deleted
 > by Snakemake once duplicate marking completes.
+> The full DeepVariant VCF is retained only when
+> `keep_full_deepvariant_vcf: true`; per-base mosdepth coverage is retained only
+> when `keep_per_base_coverage: true`.
 
 ---
 
