@@ -1,0 +1,59 @@
+# =============================================================================
+# VariantPiper v1.0.0 example configuration
+# =============================================================================
+# Phase I scope:
+#   FASTQ QC/trimming, alignment, duplicate marking, BAM indexing, sex
+#   inference, mosdepth coverage QC, MultiQC, DeepVariant SNV/indel calling,
+#   Manta SV calling, and final metadata/manifests/checksums.
+#
+# Annotation, prioritization, VEP, CADD, ClinVar, gnomAD, SpliceAI, IGV BED
+# generation, reports, and cohort analysis are intentionally out of scope.
+# =============================================================================
+
+samplesheet: "config/example_samples.tsv"
+outdir: "output"
+
+# Reference FASTA. Snakemake creates the .fai and BWA-MEM2 indexes when needed.
+reference: "resources/reference/hg38.fa"
+
+# Main Phase I filtering behavior.
+filter_pass: true
+
+# The main SNV/indel deliverable is {sample}.pass.vcf.gz.
+# The full DeepVariant VCF is usually only useful for debugging.
+keep_full_deepvariant_vcf: false
+
+# Remove fastp-trimmed FASTQs after alignment completes.
+cleanup_trimmed: true
+
+# Coverage QC.
+keep_per_base_coverage: false
+coverage_regions_bed: null
+
+mosdepth:
+  extra: ""
+
+# Phase I SV caller.
+sv_caller: manta
+
+manta:
+  extra: ""
+
+deepvariant:
+  sif: "resources/singularity/deepvariant_1.6.1.sif"
+  model_type: "WGS"
+  singularity_bind: "/data"
+  postprocess_cpus: 4
+  extra: ""
+
+bwa_mem2:
+  extra: ""
+
+fastp:
+  min_read_length: 50
+  qualified_quality_phred: 20
+  extra: ""
+
+samplegender:
+  method: "xy"
+  extra: ""

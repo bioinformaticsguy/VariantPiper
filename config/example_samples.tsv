@@ -1,0 +1,4 @@
+sample	lane	fastq_1	fastq_2	family_id	role	sex
+SAMPLE001	1	data/SAMPLE001/SAMPLE001_L001_R1.fastq.gz	data/SAMPLE001/SAMPLE001_L001_R2.fastq.gz	FAM001	proband	female
+SAMPLE001	2	data/SAMPLE001/SAMPLE001_L002_R1.fastq.gz	data/SAMPLE001/SAMPLE001_L002_R2.fastq.gz	FAM001	proband	female
+SAMPLE002	1	data/SAMPLE002/SAMPLE002_L001_R1.fastq.gz	data/SAMPLE002/SAMPLE002_L001_R2.fastq.gz	FAM001	father	male

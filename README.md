@@ -1,6 +1,22 @@
 # VariantPiper
 
-A Snakemake pipeline for germline variant calling from paired-end Illumina WGS data.
+VariantPiper v1.0.0 is a Snakemake pipeline for Phase I germline variant calling
+from paired-end short-read WGS data. It runs FASTQ QC/trimming, alignment,
+duplicate marking, BAM indexing, sex inference, mosdepth coverage QC, MultiQC,
+DeepVariant SNV/indel calling, Manta SV calling, and final Phase I
+metadata/manifests/checksums.
+
+Annotation, prioritization, VEP, CADD, ClinVar, gnomAD, SpliceAI, IGV candidate
+BED generation, clinical reports, and cohort analysis are intentionally handled
+outside this pipeline by downstream VIPER or future Phase II work.
+
+## Release Files
+
+- `CHANGELOG.md` records release history.
+- `LICENSE` contains the project license.
+- `config/example_config.yaml` is a release-safe starter config.
+- `config/example_samples.tsv` shows the expected sample sheet format.
+- `docs/usage.md` provides a concise usage guide.
 
 ## Pipeline steps
 
@@ -65,7 +81,14 @@ See `bash install.sh --help` for all options.
 
 **3. Configure your samples**
 
-Edit `config/config.yaml` and add your samples under the `samples` section:
+Start from the release example files:
+
+```bash
+cp config/example_config.yaml config/my_run.yaml
+```
+
+Edit `config/my_run.yaml` and point `samplesheet` at a TSV like
+`config/example_samples.tsv`. You can also define samples inline:
 
 ```yaml
 samples:
